@@ -5,6 +5,6 @@ import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
 data class ComplaintRequestBody(
-    @field:Json(name = "targetUserId") val targetUserId: String,
-    @field:Json(name = "operatorUserId") val operatorUserId: String
+     val targetUserId: String,
+     val operatorUserId: String
 )
