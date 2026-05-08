@@ -55,4 +55,12 @@ fun KXqiandaoTheme(
         typography = Typography,
         content = content
     )
+
+}
+@Composable
+fun KexieTheme(content: @Composable () -> Unit) {
+    MaterialTheme(
+        colorScheme = LightColorScheme,
+        content = content
+    )
 }
