@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -48,6 +49,20 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.compose.material.icons.extended)
+    //协程
+    implementation(libs.kotlinx.coroutines.android)
+    //DataStore
+    implementation(libs.androidx.datastore.preferences)
+    //Coil
+    implementation(libs.coil.compose)
+    //Moshi
+    implementation(libs.moshi)
+    ksp(libs.moshi.kotlin.codegen)
+    //Retrofit
+    implementation(libs.bundles.retrofit)
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
