@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -60,8 +61,11 @@ import io.github.yesterdaylz.kxqiandao.ui.theme.TextWhite
 import io.github.yesterdaylz.kxqiandao.viewmodel.MainViewModel
 import io.github.yesterdaylz.kxqiandao.R
 import io.github.yesterdaylz.kxqiandao.data.model.ApiResponse
+import io.github.yesterdaylz.kxqiandao.data.model.TopFiveItem
 import io.github.yesterdaylz.kxqiandao.ui.component.OnlineItem
+import io.github.yesterdaylz.kxqiandao.ui.component.RankingItem
 import io.github.yesterdaylz.kxqiandao.ui.theme.Blue1
+import kotlin.collections.lastIndex
 
 
 @Composable
@@ -75,7 +79,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
     val online by viewModel.online.collectAsStateWithLifecycle()
     val searchText by viewModel.searchText.collectAsStateWithLifecycle()
     val filteredUsers by viewModel.filteredOnlineUsers.collectAsStateWithLifecycle()
-
+    val topFiveList by viewModel.topFiveList.collectAsStateWithLifecycle()
     ///收集 Toast 事件
     LaunchedEffect(Unit) {
         viewModel.toastMessage.collect { msg ->
@@ -120,7 +124,10 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                 )
                 NavigationBarItem(
                     selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
+                    onClick = {
+                        selectedTab = 1
+                        viewModel.fetchTopFive() //切换到该页面时刷新数据
+                    },
                     icon = { Icon(Icons.Default.Leaderboard, contentDescription = "排名") },
                     label = { Text("排名") }
                 )
@@ -140,7 +147,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                 filteredUsers = filteredUsers,
                 viewModel = viewModel
             )
-            1 -> RankingTab(padding = padding)
+            1 -> RankingTab(padding = padding, topFiveList = topFiveList)
         }
     }
 }
@@ -248,24 +255,38 @@ private fun CheckInTab(
 }
 
 @Composable
-private fun RankingTab(padding: PaddingValues) {
+private fun RankingTab(padding: PaddingValues, topFiveList: List<TopFiveItem>) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(padding),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .padding(padding)
+            .padding(horizontal = 20.dp)
     ) {
-        Icon(
-            Icons.Default.Leaderboard,
-            contentDescription = null,
-            modifier = Modifier.size(80.dp),
-            tint = Blue1
-        )
         Spacer(modifier = Modifier.height(16.dp))
-        Text("排名页面", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(8.dp))
-        Text("施工中", fontSize = 14.sp, color = Color.Gray)
+
+        Text(
+            text = "🏆 本周卷王榜 ",
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(8.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
+        ) {
+            LazyColumn(
+                modifier = Modifier.padding(8.dp)
+            ) {
+                itemsIndexed(topFiveList) { index, item ->
+                    RankingItem(rank = index + 1, item = item)
+                    if (index < topFiveList.lastIndex) {
+                        HorizontalDivider(color = DividerGray, thickness = 1.dp)
+                    }
+                }
+            }
+        }
     }
 }
 

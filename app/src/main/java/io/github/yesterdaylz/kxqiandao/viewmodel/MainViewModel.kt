@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import io.github.yesterdaylz.kxqiandao.KexieApplication
 import io.github.yesterdaylz.kxqiandao.data.model.ApiResponse
 import io.github.yesterdaylz.kxqiandao.data.model.ComplaintRequestBody
+import io.github.yesterdaylz.kxqiandao.data.model.TopFiveItem
 import io.github.yesterdaylz.kxqiandao.data.model.UserId
 import io.github.yesterdaylz.kxqiandao.data.remote.RetrofitClient
 import io.github.yesterdaylz.kxqiandao.util.Constants
@@ -58,6 +59,8 @@ class MainViewModel : ViewModel() {
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+    private val _topFiveList = MutableStateFlow<List<TopFiveItem>>(emptyList())
+    val topFiveList: StateFlow<List<TopFiveItem>> = _topFiveList.asStateFlow()
 
     //过滤后的在线用户列表
     val filteredOnlineUsers: StateFlow<List<ApiResponse.MemberData>> =
@@ -282,6 +285,25 @@ class MainViewModel : ViewModel() {
                 }
             } catch (e: Exception) {
                 _toastMessage.emit(Constants.NETWORK_ERROR)
+            }
+        }
+    }
+    ///获取排名数据
+    fun fetchTopFive() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val response = RetrofitClient.api.topFive()
+                if (response.isSuccessful && response.body() != null) {
+                    _topFiveList.value = response.body()?.data ?: emptyList()
+                } else {
+                    _toastMessage.emit("获取排行榜失败")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _toastMessage.emit("网络异常，无法获取排行榜")
+            } finally {
+                _isLoading.value = false
             }
         }
     }
