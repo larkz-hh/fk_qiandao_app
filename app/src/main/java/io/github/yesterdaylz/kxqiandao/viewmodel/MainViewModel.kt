@@ -268,7 +268,7 @@ class MainViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val body = ComplaintRequestBody(
-                    targetUserId = item.userId.toString() ?: "",
+                    targetUserId = item.userId.toString(),
                     operatorUserId = prefs.uid.first()
                 )
                 val response = RetrofitClient.api.complaint(body)
@@ -304,6 +304,28 @@ class MainViewModel : ViewModel() {
                 _toastMessage.emit("网络异常，无法获取排行榜")
             } finally {
                 _isLoading.value = false
+            }
+        }
+    }
+    ///帮他人签退
+    fun signOutOther(targetUid: String) {
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.api.signOut(UserId(targetUid))
+                val json = JSONObject(response.body()!!.string())
+                when (json.getInt("code")) {
+                    0 -> {
+                        _toastMessage.emit("成功将该成员签退")
+                        //签退成功后，列表刷新界面
+                        fetchOnlineUsers()
+                    }
+                    -202 -> {
+                        _toastMessage.emit("该成员暂未签到！")
+                    }
+                    else -> _toastMessage.emit("签退失败！")
+                }
+            } catch (e: Exception) {
+                _toastMessage.emit(Constants.NETWORK_ERROR)
             }
         }
     }

@@ -1,7 +1,6 @@
 package io.github.yesterdaylz.kxqiandao.ui.screen
 
 import android.widget.Toast
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -9,13 +8,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -46,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.Red
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -58,7 +56,7 @@ import coil.compose.AsyncImage
 import io.github.yesterdaylz.kxqiandao.ui.theme.BackgroundGray
 import io.github.yesterdaylz.kxqiandao.ui.theme.DividerGray
 import io.github.yesterdaylz.kxqiandao.ui.theme.GreenOnline
-import io.github.yesterdaylz.kxqiandao.ui.theme.RedOffline
+
 import io.github.yesterdaylz.kxqiandao.ui.theme.TextWhite
 import io.github.yesterdaylz.kxqiandao.viewmodel.MainViewModel
 import io.github.yesterdaylz.kxqiandao.R
@@ -67,6 +65,9 @@ import io.github.yesterdaylz.kxqiandao.data.model.TopFiveItem
 import io.github.yesterdaylz.kxqiandao.ui.component.OnlineItem
 import io.github.yesterdaylz.kxqiandao.ui.component.RankingItem
 import io.github.yesterdaylz.kxqiandao.ui.theme.Blue1
+import io.github.yesterdaylz.kxqiandao.ui.theme.GrayOffline
+import io.github.yesterdaylz.kxqiandao.ui.theme.TextBlack
+import io.github.yesterdaylz.kxqiandao.ui.theme.WiteGray
 import kotlin.collections.lastIndex
 
 
@@ -117,7 +118,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
             }
         },
         bottomBar = {
-            NavigationBar (containerColor = Color(0xFFF6F6F6)){
+            NavigationBar (containerColor = WiteGray){
                 NavigationBarItem(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
@@ -200,16 +201,17 @@ private fun CheckInTab(
             onClick = { viewModel.signInOrOut() },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(50.dp),
+                .height(70.dp),
             shape = RoundedCornerShape(12.dp),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp, pressedElevation = 1.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (online) RedOffline else Blue1
+                containerColor = if (online) Color.White else Blue1
             )
         ) {
             Text(
                 text = if (online) "签退" else "签到",
                 fontSize = 18.sp,
-                color = Color.White
+                color = if(online) Color.Red else Color.White
             )
         }
 
@@ -245,6 +247,7 @@ private fun CheckInTab(
                         filteredUsers.forEach { user ->
                             OnlineItem(
                                 user = user,
+                                onSignOut = { viewModel.signOutOther(user.userId.toString()) },
                                 onComplaint = { viewModel.complaint(user) }
                             )
                             HorizontalDivider(color = DividerGray, thickness = 1.dp)
@@ -318,19 +321,19 @@ private fun OnlineStatusCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(15.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (online) GreenOnline else RedOffline
+            containerColor = if (online) GreenOnline else GrayOffline
         )
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            val textColor = if (online) TextWhite else TextWhite
+        Column(modifier = Modifier.padding(15.dp)) {
+            val textColor = if (online) TextBlack else TextWhite
             InfoRow("学号", uid, textColor)
-            Spacer(modifier = Modifier.height(3.dp))
+            Spacer(modifier = Modifier.height(5.dp))
             InfoRow("姓名", uname, textColor)
-            Spacer(modifier = Modifier.height(3.dp))
+            Spacer(modifier = Modifier.height(5.dp))
             Text(time, color = textColor,fontSize = 15.sp)//偷个懒，后期再考虑判断逻辑
-            Spacer(modifier = Modifier.height(3.dp))
+            Spacer(modifier = Modifier.height(5.dp))
             InfoRow("本周签到总时长" ,totalTime, textColor)
-            Spacer(modifier = Modifier.height(3.dp))
+            Spacer(modifier = Modifier.height(5.dp))
             InfoRow("周序", week, textColor)
         }
     }
