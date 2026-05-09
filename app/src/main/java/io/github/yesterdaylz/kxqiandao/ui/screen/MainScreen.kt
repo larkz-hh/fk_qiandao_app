@@ -17,8 +17,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.HowToReg
 import androidx.compose.material.icons.filled.Leaderboard
@@ -115,7 +117,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
             }
         },
         bottomBar = {
-            NavigationBar {
+            NavigationBar (containerColor = Color(0xFFF6F6F6)){
                 NavigationBarItem(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
@@ -170,6 +172,7 @@ private fun CheckInTab(
             .fillMaxSize()
             .padding(padding)
             .padding(horizontal = 20.dp)
+            .verticalScroll(rememberScrollState())
     ) {
         OutlinedTextField(
             value = if (uid == "null") "" else uid,
@@ -238,19 +241,30 @@ private fun CheckInTab(
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
-
-                    LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
-                        items(filteredUsers, key = { it.userId.toString() ?: "" }) { user ->
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        filteredUsers.forEach { user ->
                             OnlineItem(
                                 user = user,
-                                onComplaint = {viewModel.complaint(user) }
+                                onComplaint = { viewModel.complaint(user) }
                             )
                             HorizontalDivider(color = DividerGray, thickness = 1.dp)
                         }
                     }
                 }
+
+//                    LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
+//                        items(filteredUsers, key = { it.userId.toString() ?: "" }) { user ->
+//                            OnlineItem(
+//                                user = user,
+//                                onComplaint = {viewModel.complaint(user) }
+//                            )
+//                            HorizontalDivider(color = DividerGray, thickness = 1.dp)
+//                        }
+//                    }
+//                }
             }
         }
+        Spacer(modifier = Modifier.height(20.dp))
     }
 }
 
