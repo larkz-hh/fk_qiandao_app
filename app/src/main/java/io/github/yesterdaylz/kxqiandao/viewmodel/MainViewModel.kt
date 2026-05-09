@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.yesterdaylz.kxqiandao.KexieApplication
 import io.github.yesterdaylz.kxqiandao.data.model.ApiResponse
+import io.github.yesterdaylz.kxqiandao.data.model.ComplaintRequestBody
 import io.github.yesterdaylz.kxqiandao.data.model.UserId
 import io.github.yesterdaylz.kxqiandao.data.remote.RetrofitClient
 import io.github.yesterdaylz.kxqiandao.util.Constants
@@ -255,6 +256,32 @@ class MainViewModel : ViewModel() {
                 _toastMessage.emit("获取在线用户列表失败")
             } finally {
                 _isLoading.value = false
+            }
+        }
+    }
+
+    ///举办成员
+    fun complaint(item: ApiResponse.MemberData) {
+        viewModelScope.launch {
+            try {
+                val body = ComplaintRequestBody(
+                    targetUserId = item.userId.toString() ?: "",
+                    operatorUserId = prefs.uid.first()
+                )
+                val response = RetrofitClient.api.complaint(body)
+                if (response.isSuccessful) {
+                    val json = JSONObject(response.body()!!.string())
+                    if (json.getString("msg") == "举报成功") {
+                        _toastMessage.emit("举报成功")
+                        checkOnlineStatus()
+                    } else {
+                        _toastMessage.emit("举报失败")
+                    }
+                } else {
+                    _toastMessage.emit("举报失败")
+                }
+            } catch (e: Exception) {
+                _toastMessage.emit(Constants.NETWORK_ERROR)
             }
         }
     }

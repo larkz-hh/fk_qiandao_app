@@ -236,7 +236,7 @@ private fun CheckInTab(
                         items(filteredUsers, key = { it.userId.toString() ?: "" }) { user ->
                             OnlineItem(
                                 user = user,
-                                onComplaint = { }
+                                onComplaint = {viewModel.complaint(user) }
                             )
                             HorizontalDivider(color = DividerGray, thickness = 1.dp)
                         }
