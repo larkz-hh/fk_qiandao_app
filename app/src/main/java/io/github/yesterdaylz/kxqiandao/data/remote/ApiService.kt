@@ -2,6 +2,7 @@ package io.github.yesterdaylz.kxqiandao.data.remote
 
 import io.github.yesterdaylz.kxqiandao.data.model.ApiResponse
 import io.github.yesterdaylz.kxqiandao.data.model.ComplaintRequestBody
+import io.github.yesterdaylz.kxqiandao.data.model.TopFiveResponse
 import io.github.yesterdaylz.kxqiandao.data.model.UserId
 import okhttp3.ResponseBody
 import retrofit2.Response
@@ -26,4 +27,7 @@ interface ApiService {
     ///举办
     @POST("/api/user/complaint")
     suspend fun complaint(@Body body: ComplaintRequestBody): Response<ResponseBody>
+
+    @GET("/api/record/topFive")
+    suspend fun topFive(): Response<TopFiveResponse>
 }
