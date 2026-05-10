@@ -212,7 +212,7 @@ fun SignOutDialog(
                 horizontalAlignment = Alignment.Start
             ) {
                 Text(
-                    text = "你们商量好了吗？确定要帮Ta签退么？",
+                    text = "你们商量好了吗？确定要帮Ta签退么？未经允许给别人签退的人死全家😄",
                     fontSize = 20.sp,
                     color = Color.Black
                 )
@@ -236,7 +236,7 @@ fun SignOutDialog(
                             containerColor = Color(0xFFF57C00)
                         )
                     ) {
-                        Text("确定，帮Ta下班", color = Color.White)
+                        Text("确定，帮Ta下班👍", color = Color.White)
                     }
 
                     // 取消按钮
@@ -247,7 +247,7 @@ fun SignOutDialog(
                             containerColor = Color(0xFFEEEEEE)
                         )
                     ) {
-                        Text("手滑了😄", color = Color.Black)
+                        Text("哈哈，我手滑了😄", color = Color.Black)
                     }
                 }
             }

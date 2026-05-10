@@ -10,7 +10,7 @@ object Constants {
     const val QIANDAO_REPEAT = "qiantuiRepeat"
     const val QIANTUI_NO = "qiantuiNo"
     const val OP_TOO_FASTER = "opTooFaster"
-    const val NETWORK_ERROR = "连的是科协网吗，你就签？（也可能是网炸了）🤣"
+    const val NETWORK_ERROR = "连的是科协网吗，你就签？(也可能是网炸了)🤣"
     const val INIT_ONLINE_OK = "状态加载完成"
     const val SUCCEED = "succeed"
     const val FAIL = "fail"
