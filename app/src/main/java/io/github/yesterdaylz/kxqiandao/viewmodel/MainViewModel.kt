@@ -1,5 +1,11 @@
 package io.github.yesterdaylz.kxqiandao.viewmodel
 
+import android.app.AlarmManager.RTC_WAKEUP
+import android.app.PendingIntent
+import android.app.PendingIntent.FLAG_IMMUTABLE
+import android.app.PendingIntent.FLAG_UPDATE_CURRENT
+import android.content.Context.ALARM_SERVICE
+import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.yesterdaylz.kxqiandao.KexieApplication
@@ -8,6 +14,7 @@ import io.github.yesterdaylz.kxqiandao.data.model.ComplaintRequestBody
 import io.github.yesterdaylz.kxqiandao.data.model.TopFiveItem
 import io.github.yesterdaylz.kxqiandao.data.model.UserId
 import io.github.yesterdaylz.kxqiandao.data.remote.RetrofitClient
+import io.github.yesterdaylz.kxqiandao.receiver.SignOutReceiver
 import io.github.yesterdaylz.kxqiandao.util.Constants
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,9 +27,11 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Calendar
 import java.util.Locale
 import kotlin.collections.filter
 
@@ -62,6 +71,12 @@ class MainViewModel : ViewModel() {
     private val _topFiveList = MutableStateFlow<List<TopFiveItem>>(emptyList())
     val topFiveList: StateFlow<List<TopFiveItem>> = _topFiveList.asStateFlow()
 
+    private var scheduledSignOutJob: Job? = null
+
+    companion object {
+        val alarmSignOutEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    }
+
     //过滤后的在线用户列表
     val filteredOnlineUsers: StateFlow<List<ApiResponse.MemberData>> =
         combine(_onlineUserList, _searchText) { list, query ->
@@ -76,6 +91,17 @@ class MainViewModel : ViewModel() {
 
     init {
         checkOnlineStatus()
+
+        //监听来自后台广播接收器的签退成功事件
+        viewModelScope.launch {
+            alarmSignOutEvent.collect {
+                //收到信号后，强行在本地UI变为离线状态
+                _online.value = false
+                _onlineUserList.value = emptyList()
+                _time.value = "本次签到开始时间: null"
+                checkOnlineStatus()
+            }
+        }
     }
 
     ///检查登录和签到状态
@@ -131,6 +157,7 @@ class MainViewModel : ViewModel() {
                         _time.value = "本次签到开始时间: null"
                         _online.value = false
                         prefs.saveStartTime("null")
+                        _onlineUserList.value = emptyList()
                     }
                     _totalTime.value = prefs.totalTime.first()
                     _week.value = prefs.week.first()
@@ -228,7 +255,7 @@ class MainViewModel : ViewModel() {
                         prefs.saveTotalTime(_totalTime.value)
                         prefs.saveWeek(_week.value)
                         _online.value = false
-                        _toastMessage.emit("签退成功，卷🐕下工")
+                        _toastMessage.emit("签退成功，辛苦了")
                     }
 
                     -202 -> {
@@ -315,9 +342,14 @@ class MainViewModel : ViewModel() {
                 val json = JSONObject(response.body()!!.string())
                 when (json.getInt("code")) {
                     0 -> {
-                        _toastMessage.emit("成功将该成员签退")
-                        //签退成功后，列表刷新界面
-                        fetchOnlineUsers()
+                        _toastMessage.emit("成功将该成员签退，谢谢你，好心人😊")
+                        //随便弄的，反正我觉得没有神人会在自己签到页面在在线成员列表点自己的签退按钮
+                        val currentUid = prefs.uid.first()
+                        if (targetUid == currentUid || targetUid == _uid.value) {
+                            checkOnlineStatus()
+                        } else {
+                            fetchOnlineUsers()
+                        }
                     }
                     -202 -> {
                         _toastMessage.emit("该成员暂未签到！")
@@ -330,6 +362,47 @@ class MainViewModel : ViewModel() {
         }
     }
 
+    ///定时签退
+    fun scheduleSignOut(hour: Int, minute: Int) {
+        val now = Calendar.getInstance()
+        val target = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, minute)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+
+        //如果设定的时间早于当前时间，认为是设定到明天的这个时间（难绷，那时你早被下线了，这个是ai手贱加上去的，不过我觉得还好）
+        if (target.before(now)) {
+            target.add(Calendar.DAY_OF_YEAR, 1)
+        }
+
+        val context = KexieApplication.instance
+        val alarmManager = context.getSystemService(ALARM_SERVICE) as android.app.AlarmManager
+        val intent = Intent(context, SignOutReceiver::class.java)
+
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            0,
+            intent,
+            FLAG_UPDATE_CURRENT or FLAG_IMMUTABLE
+        )
+        scheduledSignOutJob?.cancel()
+        try {
+            alarmManager.setExactAndAllowWhileIdle(
+                RTC_WAKEUP,
+                target.timeInMillis,
+                pendingIntent
+            )
+            viewModelScope.launch {
+                _toastMessage.emit("已设置在 ${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')} 自动签退")
+            }
+        } catch (e: SecurityException) {
+            viewModelScope.launch {
+                _toastMessage.emit("设定失败")
+            }
+        }
+    }
 
     ///学号变化
     fun onUidChanged(text: String) {

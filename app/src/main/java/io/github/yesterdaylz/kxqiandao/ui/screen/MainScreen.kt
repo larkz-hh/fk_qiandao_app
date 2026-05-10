@@ -1,6 +1,13 @@
 package io.github.yesterdaylz.kxqiandao.ui.screen
 
+import android.app.AlarmManager
+import android.app.TimePickerDialog
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+import android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM
 import android.widget.Toast
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -19,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.HowToReg
 import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material.icons.filled.Search
@@ -28,6 +36,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextField
@@ -43,7 +52,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Color.Companion.Red
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -67,9 +75,9 @@ import io.github.yesterdaylz.kxqiandao.ui.component.RankingItem
 import io.github.yesterdaylz.kxqiandao.ui.theme.Blue1
 import io.github.yesterdaylz.kxqiandao.ui.theme.GrayOffline
 import io.github.yesterdaylz.kxqiandao.ui.theme.TextBlack
-import io.github.yesterdaylz.kxqiandao.ui.theme.WiteGray
+import java.util.Calendar
 import kotlin.collections.lastIndex
-
+import androidx.core.net.toUri
 
 @Composable
 fun MainScreen(viewModel: MainViewModel = viewModel()) {
@@ -102,23 +110,55 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    AsyncImage(
-                        model = R.drawable.logo,
-                        contentDescription = "Logo",
-                        modifier = Modifier
-                            .size(50.dp)
-                            .clip(RoundedCornerShape(10.dp)),
-                        contentScale = ContentScale.Crop
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text("三院科协", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        AsyncImage(
+                            model = R.drawable.logo,
+                            contentDescription = "Logo",
+                            modifier = Modifier
+                                .size(50.dp)
+                                .clip(RoundedCornerShape(10.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text("三院科协", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    IconButton(onClick = {
+                        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
+                            val intent = Intent(ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                                data = "package:${context.packageName}".toUri()
+                            }
+                            context.startActivity(intent)
+                            Toast.makeText(context, "你还未开启精确闹钟权限，请授权后再重试", Toast.LENGTH_SHORT).show()
+                            return@IconButton
+                        }
+                        //先用老TimePickerDialog吧
+                        val calendar = Calendar.getInstance()
+                        val dialog = TimePickerDialog(
+                            context,
+                            { _, hourOfDay, minute ->
+                                viewModel.scheduleSignOut(hourOfDay, minute)
+                            },
+                            calendar.get(Calendar.HOUR_OF_DAY),
+                            calendar.get(Calendar.MINUTE),
+                            true
+                        ).apply {
+                                setTitle("设置签退时间")
+                                setMessage("温馨提醒，本功能启动前提：\n1. 连接在科协网里\n2. APP在后台没有被系统杀掉")
+                                show()
+                            }
+                    }) {
+                        Icon(Icons.Default.Alarm, contentDescription = "定时签退")
+                    }
                 }
             }
         },
         bottomBar = {
-            NavigationBar (containerColor = WiteGray){
+            NavigationBar (containerColor = Color(0xFFF6F6F6)){
                 NavigationBarItem(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
