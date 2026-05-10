@@ -78,6 +78,8 @@ import io.github.yesterdaylz.kxqiandao.ui.theme.TextBlack
 import java.util.Calendar
 import kotlin.collections.lastIndex
 import androidx.core.net.toUri
+import io.github.yesterdaylz.kxqiandao.util.Constants
+import io.github.yesterdaylz.kxqiandao.util.showToast
 
 @Composable
 fun MainScreen(viewModel: MainViewModel = viewModel()) {
@@ -95,7 +97,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
     LaunchedEffect(Unit) {
         viewModel.toastMessage.collect { msg ->
             if (msg.isNotEmpty()) {
-                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                msg.showToast(context,Toast.LENGTH_SHORT)
             }
         }
     }
@@ -133,12 +135,12 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                                 data = "package:${context.packageName}".toUri()
                             }
                             context.startActivity(intent)
-                            Toast.makeText(context, "你还未开启精确闹钟权限，请授权后再重试", Toast.LENGTH_SHORT).show()
+                            Constants.QUAN_XIAN.showToast(context,Toast.LENGTH_SHORT)
                             return@IconButton
                         }
                         //先用老TimePickerDialog吧
                         val calendar = Calendar.getInstance()
-                        val dialog = TimePickerDialog(
+                        TimePickerDialog(
                             context,
                             { _, hourOfDay, minute ->
                                 viewModel.scheduleSignOut(hourOfDay, minute)

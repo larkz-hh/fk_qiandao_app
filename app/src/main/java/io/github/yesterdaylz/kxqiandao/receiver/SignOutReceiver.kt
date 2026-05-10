@@ -7,6 +7,8 @@ import android.widget.Toast
 import io.github.yesterdaylz.kxqiandao.KexieApplication
 import io.github.yesterdaylz.kxqiandao.data.model.UserId
 import io.github.yesterdaylz.kxqiandao.data.remote.RetrofitClient
+import io.github.yesterdaylz.kxqiandao.util.Constants
+import io.github.yesterdaylz.kxqiandao.util.showToast
 import io.github.yesterdaylz.kxqiandao.viewmodel.MainViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -41,7 +43,8 @@ class SignOutReceiver : BroadcastReceiver() {
                         // 触发单例flow事件队列通知前台ui立即下线刷新
                         MainViewModel.alarmSignOutEvent.tryEmit(Unit)
                         withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "已自动完成签退", Toast.LENGTH_LONG).show()
+                            Constants.SIGN_OUT_AUTO.showToast(context,Toast.LENGTH_LONG)
+
                         }
 //                        Handler(Looper.getMainLooper()).post {
 //                            Toast.makeText(context, "闹钟触发：已自动完成签退！", Toast.LENGTH_LONG).show()
