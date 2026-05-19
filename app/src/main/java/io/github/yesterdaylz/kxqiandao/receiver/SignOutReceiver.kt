@@ -8,6 +8,7 @@ import io.github.yesterdaylz.kxqiandao.KexieApplication
 import io.github.yesterdaylz.kxqiandao.data.model.UserId
 import io.github.yesterdaylz.kxqiandao.data.remote.RetrofitClient
 import io.github.yesterdaylz.kxqiandao.util.Constants
+import io.github.yesterdaylz.kxqiandao.service.AutoService
 import io.github.yesterdaylz.kxqiandao.util.showToast
 import io.github.yesterdaylz.kxqiandao.viewmodel.MainViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -54,6 +55,7 @@ class SignOutReceiver : BroadcastReceiver() {
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
+                context.stopService(Intent(context, AutoService::class.java))
                 pendingResult.finish()
             }
         }

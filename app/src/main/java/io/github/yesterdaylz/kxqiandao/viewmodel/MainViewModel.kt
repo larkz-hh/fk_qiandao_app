@@ -6,6 +6,7 @@ import android.app.PendingIntent.FLAG_IMMUTABLE
 import android.app.PendingIntent.FLAG_UPDATE_CURRENT
 import android.content.Context.ALARM_SERVICE
 import android.content.Intent
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.yesterdaylz.kxqiandao.KexieApplication
@@ -15,6 +16,7 @@ import io.github.yesterdaylz.kxqiandao.data.model.TopFiveItem
 import io.github.yesterdaylz.kxqiandao.data.model.UserId
 import io.github.yesterdaylz.kxqiandao.data.remote.RetrofitClient
 import io.github.yesterdaylz.kxqiandao.receiver.SignOutReceiver
+import io.github.yesterdaylz.kxqiandao.service.AutoService
 import io.github.yesterdaylz.kxqiandao.util.Constants
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -256,11 +258,13 @@ class MainViewModel : ViewModel() {
                         prefs.saveWeek(_week.value)
                         _online.value = false
                         _toastMessage.emit("签退成功，辛苦了")
+                        stopAutoService()
                     }
 
                     -202 -> {
                         _online.value = false
                         _toastMessage.emit("您还没还有签到！")
+                        stopAutoService()
                     }
 
                     else -> _toastMessage.emit("签退失败！")
@@ -394,6 +398,7 @@ class MainViewModel : ViewModel() {
                 target.timeInMillis,
                 pendingIntent
             )
+            startAutoService()
             viewModelScope.launch {
                 _toastMessage.emit("已设置在 ${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')} 自动签退")
             }
@@ -402,6 +407,16 @@ class MainViewModel : ViewModel() {
                 _toastMessage.emit("设定失败")
             }
         }
+    }
+
+    private fun startAutoService() {
+        val intent = Intent(KexieApplication.instance, AutoService::class.java)
+        ContextCompat.startForegroundService(KexieApplication.instance, intent)
+    }
+
+    fun stopAutoService() {
+        val intent = Intent(KexieApplication.instance, AutoService::class.java)
+        KexieApplication.instance.stopService(intent)
     }
 
     ///学号变化
