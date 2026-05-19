@@ -1,11 +1,7 @@
 package io.github.yesterdaylz.kxqiandao.ui.screen
 
-import android.app.AlarmManager
 import android.app.TimePickerDialog
 import android.content.Context
-import android.content.Intent
-import android.os.Build
-import android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -77,8 +73,8 @@ import io.github.yesterdaylz.kxqiandao.ui.theme.GrayOffline
 import io.github.yesterdaylz.kxqiandao.ui.theme.TextBlack
 import java.util.Calendar
 import kotlin.collections.lastIndex
-import androidx.core.net.toUri
 import io.github.yesterdaylz.kxqiandao.util.Constants
+import io.github.yesterdaylz.kxqiandao.util.PermissionUtil
 import io.github.yesterdaylz.kxqiandao.util.showToast
 
 @Composable
@@ -129,15 +125,8 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                     }
 
                     IconButton(onClick = {
-                        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
-                            val intent = Intent(ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
-                                data = "package:${context.packageName}".toUri()
-                            }
-                            context.startActivity(intent)
-                            Constants.QUAN_XIAN.showToast(context,Toast.LENGTH_SHORT)
-                            return@IconButton
-                        }
+                        if (!PermissionUtil.ensureBatteryOptimizationDisabled(context)) return@IconButton
+                        if (!PermissionUtil.ensureExactAlarmPermission(context)) return@IconButton
                         //先用老TimePickerDialog吧
                         val calendar = Calendar.getInstance()
                         TimePickerDialog(
@@ -150,7 +139,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                             true
                         ).apply {
                                 setTitle("设置签退时间")
-                                setMessage("温馨提醒，本功能启动前提：\n1. 连接在科协网里\n2. APP在后台没有被系统杀掉")
+                                setMessage("温馨提醒，本功能启动前提：\n1. 连接在科协网里\n2. 请勿关闭通知栏中的保活通知")
                                 show()
                             }
                     }) {
