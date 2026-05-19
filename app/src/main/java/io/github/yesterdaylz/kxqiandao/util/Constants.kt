@@ -16,4 +16,8 @@ object Constants {
     const val FAIL = "fail"
     const val SIGN_OUT_AUTO ="已自动完成签退"
     const val QUAN_XIAN = "你还未开启精确闹钟权限，请授权后再重试"
+    const val DIAN_CHI = "请在列表中点击本应用，选择「不优化」或「允许后台运行」"
+    const val CHANNEL_ID = "auto_signout_channel"
+    const val CHANNEL_NAME = "定时签退"
+    const val NOTIFICATION_ID = 1001
 }
