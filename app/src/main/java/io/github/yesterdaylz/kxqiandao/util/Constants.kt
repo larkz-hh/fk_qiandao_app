@@ -3,6 +3,8 @@ package io.github.yesterdaylz.kxqiandao.util
 object Constants {
     const val BASE_URL = "https://at.kexie.space"
     const val KNOWLEDGE_BASE_URL = "https://ccn80b5bgw86.feishu.cn/wiki/CKD8wrIVyi1E9VkdUVGclVFxnlb"
+    ///本版暂不开放定时签退
+    const val ENABLE_SCHEDULED_SIGN_OUT = false
     const val QIANDAO_SUCCEED = "qiandaoSucceed"
     const val QIANDAO_OUT_TIME = "qiandaoOutTime"
     const val QIANTUI_SUCCEED = "qiantuiSucceed"

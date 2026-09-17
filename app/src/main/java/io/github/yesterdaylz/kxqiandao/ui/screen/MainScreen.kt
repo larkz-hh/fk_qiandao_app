@@ -8,10 +8,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material3.Icon
@@ -29,8 +27,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -40,13 +36,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
-import coil.compose.AsyncImage
-import io.github.yesterdaylz.kxqiandao.R
 import io.github.yesterdaylz.kxqiandao.ui.component.AppBottomBar
+import io.github.yesterdaylz.kxqiandao.ui.component.AppLogo
 import io.github.yesterdaylz.kxqiandao.ui.navigation.AppDestination
 import io.github.yesterdaylz.kxqiandao.ui.navigation.LocalTabNavigator
 import io.github.yesterdaylz.kxqiandao.ui.navigation.rememberTabNavState
 import io.github.yesterdaylz.kxqiandao.ui.theme.BackgroundGray
+import io.github.yesterdaylz.kxqiandao.util.Constants
 import io.github.yesterdaylz.kxqiandao.util.PermissionUtil
 import io.github.yesterdaylz.kxqiandao.util.showToast
 import io.github.yesterdaylz.kxqiandao.viewmodel.MainViewModel
@@ -87,38 +83,33 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        AsyncImage(
-                            model = R.drawable.logo,
-                            contentDescription = "Logo",
-                            modifier = Modifier
-                                .size(50.dp)
-                                .clip(RoundedCornerShape(10.dp)),
-                            contentScale = ContentScale.Crop
-                        )
+                        AppLogo(onDoubleTap = { selectedTab = AppDestination.CheckIn })
                         Spacer(modifier = Modifier.width(12.dp))
                         Text("三院科协", fontSize = 20.sp, fontWeight = FontWeight.Bold)
                     }
 
-                    IconButton(onClick = {
-                        if (!PermissionUtil.ensureBatteryOptimizationDisabled(context)) return@IconButton
-                        if (!PermissionUtil.ensureExactAlarmPermission(context)) return@IconButton
-                        //先用老TimePickerDialog吧
-                        val calendar = Calendar.getInstance()
-                        TimePickerDialog(
-                            context,
-                            { _, hourOfDay, minute ->
-                                viewModel.scheduleSignOut(hourOfDay, minute)
-                            },
-                            calendar.get(Calendar.HOUR_OF_DAY),
-                            calendar.get(Calendar.MINUTE),
-                            true
-                        ).apply {
-                                setTitle("设置签退时间")
-                                setMessage("温馨提醒，本功能启动前提：\n1. 连接在科协网里\n2. 请勿关闭通知栏中的保活通知")
-                                show()
-                            }
-                    }) {
-                        Icon(Icons.Default.Alarm, contentDescription = "定时签退")
+                    if (Constants.ENABLE_SCHEDULED_SIGN_OUT) {
+                        IconButton(onClick = {
+                            if (!PermissionUtil.ensureBatteryOptimizationDisabled(context)) return@IconButton
+                            if (!PermissionUtil.ensureExactAlarmPermission(context)) return@IconButton
+                            // 先用老 TimePickerDialog 吧
+                            val calendar = Calendar.getInstance()
+                            TimePickerDialog(
+                                context,
+                                { _, hourOfDay, minute ->
+                                    viewModel.scheduleSignOut(hourOfDay, minute)
+                                },
+                                calendar.get(Calendar.HOUR_OF_DAY),
+                                calendar.get(Calendar.MINUTE),
+                                true
+                            ).apply {
+                                    setTitle("设置签退时间")
+                                    setMessage("温馨提醒，本功能启动前提：\n1. 连接在科协网里\n2. 请勿关闭通知栏中的保活通知")
+                                    show()
+                                }
+                        }) {
+                            Icon(Icons.Default.Alarm, contentDescription = "定时签退")
+                        }
                     }
                 }
             }
