@@ -2,7 +2,6 @@ package io.github.yesterdaylz.kxqiandao.data.local
 
 import android.content.Context
 import androidx.datastore.core.DataStore
-import androidx.datastore.dataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -50,14 +49,5 @@ class PreferencesManager(private val context: Context) {
     }
     suspend fun saveTotalTime(value: String) {
         context.dataStore.edit { it[KEY_TOTAL_TIME] = value }
-    }
-
-    suspend fun getUid(): String {
-        var result = "null"
-        context.dataStore.data.collect { prefs ->
-            result = prefs[KEY_UID] ?: "null"
-            return@collect // 只取一次
-        }
-        return result
     }
 }
