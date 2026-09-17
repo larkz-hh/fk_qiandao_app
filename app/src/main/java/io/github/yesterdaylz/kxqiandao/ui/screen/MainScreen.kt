@@ -1,7 +1,6 @@
 package io.github.yesterdaylz.kxqiandao.ui.screen
 
 import android.app.TimePickerDialog
-import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -22,9 +21,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.HowToReg
 import androidx.compose.material.icons.filled.Leaderboard
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -39,10 +40,12 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -73,7 +76,6 @@ import io.github.yesterdaylz.kxqiandao.ui.theme.GrayOffline
 import io.github.yesterdaylz.kxqiandao.ui.theme.TextBlack
 import java.util.Calendar
 import kotlin.collections.lastIndex
-import io.github.yesterdaylz.kxqiandao.util.Constants
 import io.github.yesterdaylz.kxqiandao.util.PermissionUtil
 import io.github.yesterdaylz.kxqiandao.util.showToast
 
@@ -98,7 +100,12 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
         }
     }
 
-    var selectedTab by remember { mutableIntStateOf(0) }
+    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+
+    val knowledgeHolder = remember { KnowledgeWebViewHolder() }
+    DisposableEffect(Unit) {
+        onDispose { knowledgeHolder.destroy() }
+    }
 
     Scaffold(
         containerColor = BackgroundGray,
@@ -165,6 +172,23 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                     icon = { Icon(Icons.Default.Leaderboard, contentDescription = "排名") },
                     label = { Text("排名") }
                 )
+                NavigationBarItem(
+                    selected = selectedTab == 2,
+                    onClick = { selectedTab = 2 },
+                    icon = {
+                        Icon(
+                            Icons.AutoMirrored.Filled.MenuBook,
+                            contentDescription = "知识库"
+                        )
+                    },
+                    label = { Text("知识库") }
+                )
+                NavigationBarItem(
+                    selected = selectedTab == 3,
+                    onClick = { selectedTab = 3 },
+                    icon = { Icon(Icons.Default.Person, contentDescription = "我的") },
+                    label = { Text("我的") }
+                )
             }
         }
     ) { padding ->
@@ -182,6 +206,8 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                 viewModel = viewModel
             )
             1 -> RankingTab(padding = padding, topFiveList = topFiveList)
+            2 -> KnowledgeTab(padding = padding, holder = knowledgeHolder)
+            3 -> MineTab(padding = padding)
         }
     }
 }

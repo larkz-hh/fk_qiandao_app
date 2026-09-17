@@ -2,6 +2,7 @@ package io.github.yesterdaylz.kxqiandao.util
 
 object Constants {
     const val BASE_URL = "https://at.kexie.space"
+    const val KNOWLEDGE_BASE_URL = "https://ccn80b5bgw86.feishu.cn/wiki/CKD8wrIVyi1E9VkdUVGclVFxnlb"
     const val QIANDAO_SUCCEED = "qiandaoSucceed"
     const val QIANDAO_OUT_TIME = "qiandaoOutTime"
     const val QIANTUI_SUCCEED = "qiantuiSucceed"
