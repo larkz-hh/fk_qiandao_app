@@ -16,7 +16,7 @@ class TabNavigator(private val backStack: NavBackStack<NavKey>) {
 
     /** 返回上一层，栈底不做 */
     fun goBack() {
-        backStack.removeLastOrNull()
+        if (backStack.size > 1) backStack.removeLastOrNull()
     }
 
     /** 当前 Tab 是否可返回 */

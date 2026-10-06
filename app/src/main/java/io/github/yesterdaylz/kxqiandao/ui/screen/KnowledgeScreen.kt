@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,10 +12,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -33,10 +36,14 @@ import io.github.yesterdaylz.kxqiandao.ui.theme.DividerGray
 import io.github.yesterdaylz.kxqiandao.ui.theme.GrayOffline
 
 /**
- * 知识库页用
+ * 知识库页
  */
 @Composable
-fun KnowledgeTab(padding: PaddingValues, holder: KnowledgeWebViewHolder) {
+fun KnowledgePage(
+    padding: PaddingValues,
+    holder: KnowledgeWebViewHolder,
+    onBack: () -> Unit,
+) {
     val context = LocalContext.current
 
     val uiState = holder.uiState
@@ -46,34 +53,57 @@ fun KnowledgeTab(padding: PaddingValues, holder: KnowledgeWebViewHolder) {
         holder.peek()?.goBack()
     }
 
-    Box(
+    Column(
         modifier = Modifier
             .padding(padding)
             .fillMaxSize()
     ) {
-        AndroidView(
-            modifier = Modifier.fillMaxSize(),
-            factory = { ctx -> holder.obtain(ctx) }
-        )
+        KnowledgeTopBar(onBack = onBack)
 
-        if (uiState.loading) {
-            LinearProgressIndicator(
-                progress = { uiState.progress / 100f },
-                color = Blue1,              // 品牌蓝，不用主题默认的紫
-                trackColor = DividerGray,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.TopCenter)
+        Box(modifier = Modifier.fillMaxSize()) {
+            AndroidView(
+                modifier = Modifier.fillMaxSize(),
+                factory = { ctx -> holder.obtain(ctx) }
+            )
+
+            if (uiState.loading) {
+                LinearProgressIndicator(
+                    progress = { uiState.progress / 100f },
+                    color = Blue1,              // 品牌蓝，不用主题默认的紫
+                    trackColor = DividerGray,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.TopCenter)
+                )
+            }
+
+            uiState.errorMessage?.let { message ->
+                KnowledgeErrorView(
+                    message = message,
+                    onRetry = { holder.retry() },
+                    onOpenInBrowser = { holder.openInBrowser(context) }
+                )
+            }
+        }
+    }
+}
+
+/** 知识库页顶栏 */
+@Composable
+private fun KnowledgeTopBar(onBack: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = onBack) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "返回"
             )
         }
-
-        uiState.errorMessage?.let { message ->
-            KnowledgeErrorView(
-                message = message,
-                onRetry = { holder.retry() },
-                onOpenInBrowser = { holder.openInBrowser(context) }
-            )
-        }
+        Text(text = "知识库", fontSize = 17.sp, fontWeight = FontWeight.Medium)
     }
 }
 

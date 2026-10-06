@@ -66,6 +66,9 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
     // Tab 独立回退栈
     val navState = rememberTabNavState(selectedTab)
 
+    // Tab 根页面显示顶栏 / 底栏
+    val showBars = navState.isRootPage
+
     val knowledgeHolder = remember { KnowledgeWebViewHolder() }
     DisposableEffect(Unit) {
         onDispose { knowledgeHolder.destroy() }
@@ -74,24 +77,13 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
     Scaffold(
         containerColor = BackgroundGray,
         topBar = {
-            Column(modifier = Modifier.statusBarsPadding()) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        AppLogo(onDoubleTap = { selectedTab = AppDestination.CheckIn })
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text("三院科协", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                    }
-
-                    if (Constants.ENABLE_SCHEDULED_SIGN_OUT) {
-                        IconButton(onClick = {
-                            if (!PermissionUtil.ensureBatteryOptimizationDisabled(context)) return@IconButton
-                            if (!PermissionUtil.ensureExactAlarmPermission(context)) return@IconButton
+            if (showBars) {
+                MainTopBar(
+                    onLogoDoubleTap = { selectedTab = AppDestination.CheckIn },
+                    onScheduleSignOut = {
+                        if (PermissionUtil.ensureBatteryOptimizationDisabled(context) &&
+                            PermissionUtil.ensureExactAlarmPermission(context)
+                        ) {
                             // 先用老 TimePickerDialog 吧
                             val calendar = Calendar.getInstance()
                             TimePickerDialog(
@@ -103,25 +95,25 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                                 calendar.get(Calendar.MINUTE),
                                 true
                             ).apply {
-                                    setTitle("设置签退时间")
-                                    setMessage("温馨提醒，本功能启动前提：\n1. 连接在科协网里\n2. 请勿关闭通知栏中的保活通知")
-                                    show()
-                                }
-                        }) {
-                            Icon(Icons.Default.Alarm, contentDescription = "定时签退")
+                                setTitle("设置签退时间")
+                                setMessage("温馨提醒，本功能启动前提：\n1. 连接在科协网里\n2. 请勿关闭通知栏中的保活通知")
+                                show()
+                            }
                         }
                     }
-                }
+                )
             }
         },
         bottomBar = {
-            AppBottomBar(
-                selected = selectedTab,
-                onSelect = { destination ->
-                    selectedTab = destination
-                    if (destination == AppDestination.Ranking) viewModel.fetchTopFive() //切换到该页面时刷新数据
-                }
-            )
+            if (showBars) {
+                AppBottomBar(
+                    selected = selectedTab,
+                    onSelect = { destination ->
+                        selectedTab = destination
+                        if (destination == AppDestination.Ranking) viewModel.fetchTopFive() //切换到该页面时刷新数据
+                    }
+                )
+            }
         }
     ) { padding ->
         // 把当前 Tab 的导航器 provide 给 NavDisplay 里所有页面
@@ -137,14 +129,50 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                     entry<AppDestination.Ranking> {
                         RankingTab(padding = padding, topFiveList = uiState.topFiveList)
                     }
+                    entry<AppDestination.Entries> {
+                        EntriesTab(padding = padding)
+                    }
                     entry<AppDestination.Knowledge> {
-                        KnowledgeTab(padding = padding, holder = knowledgeHolder)
+                        KnowledgePage(
+                            padding = padding,
+                            holder = knowledgeHolder,
+                            onBack = { navState.navigator.goBack() }
+                        )
                     }
                     entry<AppDestination.Mine> {
                         MineTab(padding = padding)
                     }
                 }
             )
+        }
+    }
+}
+
+/** 顶栏：LOGO + 标题 + 定时签退 */
+@Composable
+private fun MainTopBar(
+    onLogoDoubleTap: () -> Unit,
+    onScheduleSignOut: () -> Unit,
+) {
+    Column(modifier = Modifier.statusBarsPadding()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                AppLogo(onDoubleTap = onLogoDoubleTap)
+                Spacer(modifier = Modifier.width(12.dp))
+                Text("三院科协", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            }
+
+            if (Constants.ENABLE_SCHEDULED_SIGN_OUT) {
+                IconButton(onClick = onScheduleSignOut) {
+                    Icon(Icons.Default.Alarm, contentDescription = "定时签退")
+                }
+            }
         }
     }
 }

@@ -13,7 +13,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 fun rememberTabNavState(current: AppDestination): TabNavState {
     val checkIn = rememberNavBackStack(AppDestination.CheckIn)
     val ranking = rememberNavBackStack(AppDestination.Ranking)
-    val knowledge = rememberNavBackStack(AppDestination.Knowledge)
+    val entries = rememberNavBackStack(AppDestination.Entries)
     val mine = rememberNavBackStack(AppDestination.Mine)
     return remember(current) {
         TabNavState(
@@ -21,7 +21,7 @@ fun rememberTabNavState(current: AppDestination): TabNavState {
             stacks = mapOf(
                 AppDestination.CheckIn to checkIn,
                 AppDestination.Ranking to ranking,
-                AppDestination.Knowledge to knowledge,
+                AppDestination.Entries to entries,
                 AppDestination.Mine to mine,
             ),
         )
@@ -41,4 +41,7 @@ class TabNavState internal constructor(
 
     // 当前 Tab 的导航器
     val navigator: TabNavigator = TabNavigator(currentStack)
+
+    /** 当前是否停留在 Tab 根页面 */
+    val isRootPage: Boolean get() = currentStack.size <= 1
 }

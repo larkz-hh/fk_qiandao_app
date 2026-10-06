@@ -1,7 +1,7 @@
 package io.github.yesterdaylz.kxqiandao.ui.component
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.HowToReg
 import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material.icons.filled.Person
@@ -22,11 +22,12 @@ private data class BottomTab(
 
 /**
  *  Tab
+ *
  */
 private val BottomTabs = listOf(
     BottomTab(AppDestination.CheckIn, "签到", Icons.Default.HowToReg),
     BottomTab(AppDestination.Ranking, "排名", Icons.Default.Leaderboard),
-    BottomTab(AppDestination.Knowledge, "知识库", Icons.AutoMirrored.Filled.MenuBook),
+    BottomTab(AppDestination.Entries, "入口", Icons.Default.Apps),
     BottomTab(AppDestination.Mine, "我的", Icons.Default.Person),
 )
 
