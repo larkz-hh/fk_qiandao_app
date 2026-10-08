@@ -22,6 +22,17 @@ object PermissionUtil {
         ) == PackageManager.PERMISSION_GRANTED
     }
 
+    /// 定位权限是否已授权
+    fun hasLocationPermission(context: Context): Boolean {
+        val fine = ContextCompat.checkSelfPermission(
+            context, Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+        val coarse = ContextCompat.checkSelfPermission(
+            context, Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+        return fine || coarse
+    }
+
     /// 确保电池优化已关闭，未关闭则跳转系统设置并返回 false
     fun ensureBatteryOptimizationDisabled(context: Context): Boolean {
         val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager

@@ -1,7 +1,10 @@
 package io.github.yesterdaylz.kxqiandao.ui.screen
 
+import android.Manifest
 import android.app.TimePickerDialog
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -44,6 +47,7 @@ import io.github.yesterdaylz.kxqiandao.ui.navigation.rememberTabNavState
 import io.github.yesterdaylz.kxqiandao.ui.theme.BackgroundGray
 import io.github.yesterdaylz.kxqiandao.util.Constants
 import io.github.yesterdaylz.kxqiandao.util.PermissionUtil
+import io.github.yesterdaylz.kxqiandao.util.UrlRouter
 import io.github.yesterdaylz.kxqiandao.util.showToast
 import io.github.yesterdaylz.kxqiandao.viewmodel.MainViewModel
 import java.util.Calendar
@@ -69,9 +73,39 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
     // Tab 根页面显示顶栏 / 底栏
     val showBars = navState.isRootPage
 
-    val knowledgeHolder = remember { KnowledgeWebViewHolder() }
+    var pendingLocationRequest by remember { mutableStateOf<((Boolean) -> Unit)?>(null) }
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        pendingLocationRequest?.invoke(granted)
+        pendingLocationRequest = null
+    }
+
+    // 各页各持一个 WebView，切回来不重载
+    val knowledgeHolder = remember {
+        WebPageViewHolder(Constants.KNOWLEDGE_BASE_URL, UrlRouter::isKnowledgeHost)
+    }
+    // 认证域名由服务端下发不固定，跳出 WebView 会丢登录态
+    val campusRunHolder = remember {
+        WebPageViewHolder(
+            startUrl = Constants.CAMPUS_RUN_URL,
+            isInternalHost = { true },
+            fixCollapsedLayout = true,
+            requestGeolocation = { onResult ->
+                if (PermissionUtil.hasLocationPermission(context)) {
+                    onResult(true)
+                } else {
+                    pendingLocationRequest = onResult
+                    locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                }
+            }
+        )
+    }
     DisposableEffect(Unit) {
-        onDispose { knowledgeHolder.destroy() }
+        onDispose {
+            knowledgeHolder.destroy()
+            campusRunHolder.destroy()
+        }
     }
 
     Scaffold(
@@ -133,9 +167,18 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                         EntriesTab(padding = padding)
                     }
                     entry<AppDestination.Knowledge> {
-                        KnowledgePage(
+                        WebPageScreen(
                             padding = padding,
                             holder = knowledgeHolder,
+                            title = "知识库",
+                            onBack = { navState.navigator.goBack() }
+                        )
+                    }
+                    entry<AppDestination.CampusRun> {
+                        WebPageScreen(
+                            padding = padding,
+                            holder = campusRunHolder,
+                            title = "校园跑",
                             onBack = { navState.navigator.goBack() }
                         )
                     }

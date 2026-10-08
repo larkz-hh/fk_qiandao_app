@@ -18,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.DirectionsRun
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material3.Card
@@ -58,6 +59,12 @@ private val AppEntries = listOf(
         subtitle = "科协知识库文档与资料",
         icon = Icons.AutoMirrored.Filled.MenuBook,
         destination = AppDestination.Knowledge,
+    ),
+    AppEntry(
+        title = "校园跑",
+        subtitle = "校内跑步打卡服务（需连校园网）",
+        icon = Icons.AutoMirrored.Filled.DirectionsRun,
+        destination = AppDestination.CampusRun,
     ),
 )
 

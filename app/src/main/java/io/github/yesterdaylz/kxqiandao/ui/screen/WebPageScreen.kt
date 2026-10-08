@@ -36,12 +36,13 @@ import io.github.yesterdaylz.kxqiandao.ui.theme.DividerGray
 import io.github.yesterdaylz.kxqiandao.ui.theme.GrayOffline
 
 /**
- * 知识库页
+ * 内嵌网页页（知识库 / 校园跑等）
  */
 @Composable
-fun KnowledgePage(
+fun WebPageScreen(
     padding: PaddingValues,
-    holder: KnowledgeWebViewHolder,
+    holder: WebPageViewHolder,
+    title: String,
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -58,7 +59,7 @@ fun KnowledgePage(
             .padding(padding)
             .fillMaxSize()
     ) {
-        KnowledgeTopBar(onBack = onBack)
+        WebPageTopBar(title = title, onBack = onBack)
 
         Box(modifier = Modifier.fillMaxSize()) {
             AndroidView(
@@ -78,7 +79,8 @@ fun KnowledgePage(
             }
 
             uiState.errorMessage?.let { message ->
-                KnowledgeErrorView(
+                WebPageErrorView(
+                    title = title,
                     message = message,
                     onRetry = { holder.retry() },
                     onOpenInBrowser = { holder.openInBrowser(context) }
@@ -88,9 +90,9 @@ fun KnowledgePage(
     }
 }
 
-/** 知识库页顶栏 */
+/** 内嵌网页页顶栏 */
 @Composable
-private fun KnowledgeTopBar(onBack: () -> Unit) {
+private fun WebPageTopBar(title: String, onBack: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -103,13 +105,14 @@ private fun KnowledgeTopBar(onBack: () -> Unit) {
                 contentDescription = "返回"
             )
         }
-        Text(text = "知识库", fontSize = 17.sp, fontWeight = FontWeight.Medium)
+        Text(text = title, fontSize = 17.sp, fontWeight = FontWeight.Medium)
     }
 }
 
 /** 主框架加载失败时的错误提示 */
 @Composable
-private fun KnowledgeErrorView(
+private fun WebPageErrorView(
+    title: String,
     message: String,
     onRetry: () -> Unit,
     onOpenInBrowser: () -> Unit
@@ -128,7 +131,7 @@ private fun KnowledgeErrorView(
                 tint = GrayOffline
             )
             Spacer(modifier = Modifier.height(12.dp))
-            Text("知识库加载失败", fontSize = 17.sp, fontWeight = FontWeight.Medium)
+            Text("$title 加载失败", fontSize = 17.sp, fontWeight = FontWeight.Medium)
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = message,

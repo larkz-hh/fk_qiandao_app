@@ -10,13 +10,16 @@ import android.net.Uri
  */
 object UrlRouter {
 
-    private val INTERNAL_HOSTS = listOf("feishu.cn", "larksuite.com", "feishu.net")
+    private val FEISHU_HOSTS = listOf("feishu.cn", "larksuite.com", "feishu.net")
 
     /** host 是否属于站内域名 */
-    fun isInternalHost(host: String?): Boolean {
+    fun isInternalHost(host: String?, internalHosts: List<String>): Boolean {
         val h = host?.lowercase() ?: return false
-        return INTERNAL_HOSTS.any { h == it || h.endsWith(".$it") }
+        return internalHosts.any { h == it || h.endsWith(".$it") }
     }
+
+    /** 知识库站内域名判定 */
+    fun isKnowledgeHost(host: String?): Boolean = isInternalHost(host, FEISHU_HOSTS)
 
     /** 系统打开 */
     fun openExternally(context: Context, uri: Uri) {
