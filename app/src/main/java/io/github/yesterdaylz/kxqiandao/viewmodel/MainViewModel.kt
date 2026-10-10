@@ -35,6 +35,7 @@ private const val TIME_NULL = "本次签到开始时间: null"
 
 data class MainUiState(
     val uid: String = "",
+    val selfUid: String = "",// 本地登录的人
     val uname: String = "",
     val time: String = TIME_NULL,
     val totalTime: String = "null",
@@ -103,7 +104,7 @@ class MainViewModel : ViewModel() {
                     )
                 }
             } else {
-                _uiState.update { it.copy(uid = savedUid) }
+                _uiState.update { it.copy(uid = savedUid, selfUid = savedUid) }
                 fetchOnlineStatus(savedUid)
             }
             _toastMessage.emit(Constants.INIT_ONLINE_OK)
@@ -151,6 +152,7 @@ class MainViewModel : ViewModel() {
             _uiState.update {
                 it.copy(
                     uid = data.userId.orEmpty(),
+                    selfUid = data.userId.orEmpty(),
                     uname = data.userName.orEmpty(),
                     time = "本次签到开始时间: $startTime",
                     totalTime = totalTime,
@@ -165,6 +167,7 @@ class MainViewModel : ViewModel() {
             _uiState.update {
                 it.copy(
                     uid = data.userId.orEmpty(),
+                    selfUid = data.userId.orEmpty(),
                     uname = data.userName.orEmpty(),
                     time = TIME_NULL,
                     totalTime = totalTime,
@@ -216,6 +219,7 @@ class MainViewModel : ViewModel() {
                             _uiState.update {
                                 it.copy(
                                     uid = data.userId.orEmpty(),
+                                    selfUid = data.userId.orEmpty(),
                                     uname = data.userName.orEmpty(),
                                     totalTime = data.totalTime.orEmpty(),
                                     week = data.week.orEmpty(),
@@ -228,7 +232,7 @@ class MainViewModel : ViewModel() {
                         }
 
                         -201 -> {
-                            _uiState.update { it.copy(online = true) }
+                            _uiState.update { it.copy(online = true, selfUid = uid) }
                             _toastMessage.emit("重复签到！")
                             fetchOnlineUsers()
                         }
@@ -265,6 +269,7 @@ class MainViewModel : ViewModel() {
                             _uiState.update {
                                 it.copy(
                                     uid = data.userId.orEmpty(),
+                                    selfUid = data.userId.orEmpty(),
                                     uname = data.userName.orEmpty(),
                                     totalTime = data.totalTime.orEmpty(),
                                     week = data.week.orEmpty(),
@@ -335,9 +340,8 @@ class MainViewModel : ViewModel() {
                     when (res.code) {
                         0 -> {
                             _toastMessage.emit("成功将该成员签退，谢谢你，好心人😊")
-                            // 随便弄的，反正我觉得没有神人会在自己签到页面在在线成员列表点自己的签退按钮
-                            val currentUid = repo.savedUid()
-                            if (targetUid == currentUid || targetUid == _uiState.value.uid) {
+                            // 自己的按钮已隐藏
+                            if (targetUid == repo.savedUid()) {
                                 checkOnlineStatus()
                             } else {
                                 fetchOnlineUsers()

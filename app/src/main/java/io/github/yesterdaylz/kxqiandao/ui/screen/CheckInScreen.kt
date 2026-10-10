@@ -127,6 +127,8 @@ fun CheckInTab(
                         uiState.filteredUsers.forEach { user ->
                             OnlineItem(
                                 user = user,
+                                isSelf = uiState.selfUid.isNotEmpty() &&
+                                        user.userId?.toString() == uiState.selfUid,
                                 onSignOut = { viewModel.signOutOther(user.userId.toString()) },
                                 onComplaint = { viewModel.complaint(user) }
                             )

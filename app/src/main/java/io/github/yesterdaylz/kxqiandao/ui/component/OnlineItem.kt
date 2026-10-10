@@ -30,6 +30,7 @@ import io.github.yesterdaylz.kxqiandao.data.model.ApiResponse
 @Composable
 fun OnlineItem(
     user: ApiResponse.MemberData,
+    isSelf: Boolean = false,
     onSignOut: () -> Unit,
     onComplaint: () -> Unit
 ) {
@@ -72,39 +73,41 @@ fun OnlineItem(
             )
         }
 
-        Column(
-            modifier = Modifier.weight(3.5f),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            // 签退按钮
-            Button(
-                onClick = { showSignOutDialog = true },
-                shape = RoundedCornerShape(6.dp),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp, pressedElevation = 1.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF2F2F2)
-                ),
-                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                modifier = Modifier.height(28.dp).fillMaxWidth(0.9f)
+        if (!isSelf) {
+            Column(
+                modifier = Modifier.weight(3.5f),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                Text("签退", fontSize = 11.sp, color = Color.Black)
-            }
+                // 签退按钮
+                Button(
+                    onClick = { showSignOutDialog = true },
+                    shape = RoundedCornerShape(6.dp),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp, pressedElevation = 1.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFF2F2F2)
+                    ),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                    modifier = Modifier.height(28.dp).fillMaxWidth(0.9f)
+                ) {
+                    Text("签退", fontSize = 11.sp, color = Color.Black)
+                }
 
-            Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
-            // 举办按钮
-            Button(
-                onClick = { showComplaintDialog = true },
-                shape = RoundedCornerShape(6.dp),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 2.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF2F2F2)
-                ),
-                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                modifier = Modifier.height(28.dp).fillMaxWidth(0.9f)
-            ) {
-                Text("举报", fontSize = 11.sp, color = Color.Black)
+                // 举报按钮
+                Button(
+                    onClick = { showComplaintDialog = true },
+                    shape = RoundedCornerShape(6.dp),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 2.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFF2F2F2)
+                    ),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                    modifier = Modifier.height(28.dp).fillMaxWidth(0.9f)
+                ) {
+                    Text("举报", fontSize = 11.sp, color = Color.Black)
+                }
             }
         }
     }
