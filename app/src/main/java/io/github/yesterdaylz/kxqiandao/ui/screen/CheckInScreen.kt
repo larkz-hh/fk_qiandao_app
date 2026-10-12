@@ -36,6 +36,7 @@ import io.github.yesterdaylz.kxqiandao.ui.theme.GrayOffline
 import io.github.yesterdaylz.kxqiandao.ui.theme.GreenOnline
 import io.github.yesterdaylz.kxqiandao.ui.theme.TextBlack
 import io.github.yesterdaylz.kxqiandao.ui.theme.TextWhite
+import io.github.yesterdaylz.kxqiandao.util.NetworkUtil
 import io.github.yesterdaylz.kxqiandao.viewmodel.MainUiState
 import io.github.yesterdaylz.kxqiandao.viewmodel.MainViewModel
 
@@ -66,13 +67,19 @@ fun CheckInTab(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        if (uiState.netState != NetworkUtil.NetState.Campus) {
+            CampusNetworkHint(uiState.netState)
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
         OnlineStatusCard(
             uid = uiState.uid,
             uname = uiState.uname,
             time = uiState.time,
             totalTime = uiState.totalTime,
             week = uiState.week,
-            online = uiState.online
+            online = uiState.online,
+            statusKnown = uiState.statusKnown,
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -150,7 +157,8 @@ private fun OnlineStatusCard(
     time: String,
     totalTime: String,
     week: String,
-    online: Boolean
+    online: Boolean,
+    statusKnown: Boolean,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -165,12 +173,36 @@ private fun OnlineStatusCard(
             Spacer(modifier = Modifier.height(5.dp))
             InfoRow("姓名", uname, textColor)
             Spacer(modifier = Modifier.height(5.dp))
-            Text(time, color = textColor,fontSize = 15.sp)//偷个懒，后期再考虑判断逻辑
+            Text(time, color = textColor,fontSize = 15.sp)
+            if (!statusKnown) {
+                Spacer(modifier = Modifier.height(5.dp))
+                Text("状态未确认，请检查网络", color = textColor, fontSize = 13.sp)
+            }
             Spacer(modifier = Modifier.height(5.dp))
             InfoRow("本周签到总时长" ,totalTime, textColor)
             Spacer(modifier = Modifier.height(5.dp))
             InfoRow("周序", week, textColor)
         }
+    }
+}
+
+/** 不在科协网时的提示 */
+@Composable
+private fun CampusNetworkHint(state: NetworkUtil.NetState) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF4CE))
+    ) {
+        Text(
+            text = when (state) {
+                NetworkUtil.NetState.Offline -> "网络不可用，请检查网络"
+                else -> "当前不在科协网，签到 / 签退可能失败"
+            },
+            modifier = Modifier.padding(12.dp),
+            fontSize = 13.sp,
+            color = Color(0xFF8A6D3B)
+        )
     }
 }
 

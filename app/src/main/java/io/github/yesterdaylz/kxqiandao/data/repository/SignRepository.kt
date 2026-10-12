@@ -47,6 +47,11 @@ class SignRepository(
         prefs.saveWeek(week)
     }
 
+    /** 补全姓名 */
+    suspend fun saveUname(value: String) {
+        if (value.isNotBlank()) prefs.saveUname(value)
+    }
+
     /** 记下本次签到开始时间 */
     suspend fun saveStartTime(value: String) {
         prefs.saveStartTime(value)

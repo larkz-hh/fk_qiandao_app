@@ -34,6 +34,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.entryProvider
@@ -72,6 +74,11 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
 
     // Tab 根页面显示顶栏 / 底栏
     val showBars = navState.isRootPage
+
+    // 切后台再回来，签到状态可能变化
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.checkOnlineStatus(silent = true)
+    }
 
     var pendingLocationRequest by remember { mutableStateOf<((Boolean) -> Unit)?>(null) }
     val locationPermissionLauncher = rememberLauncherForActivityResult(
