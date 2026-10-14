@@ -14,5 +14,6 @@ data class OnlineStatusData(
     val userId: String?,
     val userName: String?,
     val status: Int?,// 1 = 在线
+    val week: Int?,// 周序
     val start: String?// 本次签到开始时间
 )

@@ -15,6 +15,7 @@ import io.github.yesterdaylz.kxqiandao.KexieApplication
 import io.github.yesterdaylz.kxqiandao.data.model.ApiResponse
 import io.github.yesterdaylz.kxqiandao.data.model.TopFiveItem
 import io.github.yesterdaylz.kxqiandao.data.repository.SignRepository
+import io.github.yesterdaylz.kxqiandao.data.remote.ApiException
 import io.github.yesterdaylz.kxqiandao.receiver.SignOutReceiver
 import io.github.yesterdaylz.kxqiandao.service.AutoService
 import io.github.yesterdaylz.kxqiandao.util.Constants
@@ -34,6 +35,7 @@ import java.util.Date
 import java.util.Calendar
 import java.util.Locale
 import kotlin.collections.filter
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val TIME_NULL = "本次签到开始时间: null"
 
@@ -128,7 +130,7 @@ class MainViewModel : ViewModel() {
     /** 换网后状态大概率变了，等系统切完再刷 */
     private fun onNetworkChanged() {
         viewModelScope.launch {
-            delay(500)
+            delay(500.milliseconds)
             refreshNetState()
             checkOnlineStatus(silent = true)
         }
@@ -175,15 +177,21 @@ class MainViewModel : ViewModel() {
 
         val data = body?.data
         if (data == null) {
-            // 查不到标注未确认
-            result.exceptionOrNull()?.printStackTrace()
-            _uiState.update { it.copy(statusKnown = false) }
-            if (!silent) _toastMessage.emit(Constants.NETWORK_ERROR)
+            val error = result.exceptionOrNull()
+            if (error is ApiException) {
+                // 服务端有回应，说明网络是通的
+                if (!silent) _toastMessage.emit(error.userMessage("查询失败"))
+            } else {
+                // 查不到标注未确认
+                error?.printStackTrace()
+                _uiState.update { it.copy(statusKnown = false) }
+                if (!silent) _toastMessage.emit(Constants.NETWORK_ERROR)
+            }
             return
         }
 
         val totalTime = repo.savedTotalTime()
-        val week = repo.savedWeek()
+        val savedWeek = repo.savedWeek()
 
         if (data.status == 1) {//在线
             val serverStart = data.start.orEmpty()
@@ -191,10 +199,10 @@ class MainViewModel : ViewModel() {
                 repo.saveStartTime(serverStart)
                 serverStart
             } else {
-                // 我也不知道什么情况，
-                // 有一个情况下日志会显示后端没给时间，
-                // 结果直接走catch路线了，就先从 DataStore 的时间吧
-                repo.ongoingStartTime() ?: "暂无数据"
+                // 在线状态接口不返回开始时间，先从本地拿，再不行去签到记录里找
+                repo.ongoingStartTime()
+                    ?: fetchStartTimeFromRecords(uid)
+                    ?: "暂无数据"
             }
             repo.saveUname(data.userName.orEmpty())
             _uiState.update { state ->
@@ -204,7 +212,7 @@ class MainViewModel : ViewModel() {
                     uname = data.userName.orEmpty(),
                     time = "本次签到开始时间: $startTime",
                     totalTime = totalTime,
-                    week = week,
+                    week = data.week?.toString() ?: savedWeek,
                     online = true,
                     statusKnown = true,
                 )
@@ -220,7 +228,7 @@ class MainViewModel : ViewModel() {
                     uname = data.userName.orEmpty(),
                     time = TIME_NULL,
                     totalTime = totalTime,
-                    week = week,
+                    week = data.week?.toString() ?: savedWeek,
                     online = false,
                     statusKnown = true,
                     onlineUsers = emptyList(),
@@ -228,6 +236,25 @@ class MainViewModel : ViewModel() {
             }
         }
     }
+
+    /** 从签到记录里取当前这条的开始时间 */
+    private suspend fun fetchStartTimeFromRecords(uid: String): String? {
+        val start = repo.records(uid).getOrNull()
+            ?.firstOrNull { it.status == "在线" }
+            ?.start
+            ?.takeIf { it.isNotBlank() }
+            ?: return null
+        repo.saveStartTime(start)
+        return start
+    }
+
+    /** 服务端报错时优先用它自己的提示 */
+    private fun Throwable.userMessage(fallback: String): String =
+        if (this is ApiException) message?.takeIf { it.isNotBlank() } ?: fallback else fallback
+
+    /** 响应里带了 msg 就用它 */
+    private fun errorText(msg: String?, fallback: String): String =
+        msg?.takeIf { it.isNotBlank() } ?: fallback
 
     /** 判断签到签退 */
     fun signInOrOut() {
@@ -301,10 +328,10 @@ class MainViewModel : ViewModel() {
 
                         -205 -> _toastMessage.emit("宁操作太频繁了\n请稍后重试")
                         -206 -> _toastMessage.emit("别熬夜鸭，该时段不允许签到哦")
-                        else -> _toastMessage.emit("签到失败！")
+                        else -> _toastMessage.emit(errorText(res.msg, "签到失败！"))
                     }
                 }
-                .onFailure { _toastMessage.emit(Constants.NETWORK_ERROR) }
+                .onFailure { _toastMessage.emit(it.userMessage(Constants.NETWORK_ERROR)) }
         }
     }
 
@@ -351,10 +378,10 @@ class MainViewModel : ViewModel() {
                             stopAutoService()
                         }
 
-                        else -> _toastMessage.emit("签退失败！")
+                        else -> _toastMessage.emit(errorText(res.msg, "签退失败！"))
                     }
                 }
-                .onFailure { _toastMessage.emit(Constants.NETWORK_ERROR) }
+                .onFailure { _toastMessage.emit(it.userMessage(Constants.NETWORK_ERROR)) }
         }
     }
 
@@ -363,7 +390,7 @@ class MainViewModel : ViewModel() {
         viewModelScope.launch {
             repo.onlineMembers()
                 .onSuccess { users -> _uiState.update { it.copy(onlineUsers = users) } }
-                .onFailure { _toastMessage.emit("获取在线用户列表失败") }
+                .onFailure { _toastMessage.emit(it.userMessage("获取在线用户列表失败")) }
         }
     }
 
@@ -380,7 +407,7 @@ class MainViewModel : ViewModel() {
                         _toastMessage.emit("举报失败")
                     }
                 }
-                .onFailure { _toastMessage.emit(Constants.NETWORK_ERROR) }
+                .onFailure { _toastMessage.emit(it.userMessage(Constants.NETWORK_ERROR)) }
         }
     }
 
@@ -391,7 +418,7 @@ class MainViewModel : ViewModel() {
                 .onSuccess { list -> _uiState.update { it.copy(topFiveList = list) } }
                 .onFailure {
                     it.printStackTrace()
-                    _toastMessage.emit("获取排行榜失败")
+                    _toastMessage.emit(it.userMessage("获取排行榜失败"))
                 }
         }
     }
@@ -413,10 +440,10 @@ class MainViewModel : ViewModel() {
                         }
 
                         -202 -> _toastMessage.emit("该成员暂未签到！")
-                        else -> _toastMessage.emit("签退失败！")
+                        else -> _toastMessage.emit(errorText(res.msg, "签退失败！"))
                     }
                 }
-                .onFailure { _toastMessage.emit(Constants.NETWORK_ERROR) }
+                .onFailure { _toastMessage.emit(it.userMessage(Constants.NETWORK_ERROR)) }
         }
     }
 

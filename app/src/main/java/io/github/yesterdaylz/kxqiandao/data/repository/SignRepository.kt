@@ -5,9 +5,11 @@ import io.github.yesterdaylz.kxqiandao.data.local.PreferencesManager
 import io.github.yesterdaylz.kxqiandao.data.model.ApiResponse
 import io.github.yesterdaylz.kxqiandao.data.model.ComplaintRequestBody
 import io.github.yesterdaylz.kxqiandao.data.model.OnlineStatusResponse
+import io.github.yesterdaylz.kxqiandao.data.model.RecordItem
 import io.github.yesterdaylz.kxqiandao.data.model.SignResponse
 import io.github.yesterdaylz.kxqiandao.data.model.TopFiveItem
 import io.github.yesterdaylz.kxqiandao.data.model.UserId
+import io.github.yesterdaylz.kxqiandao.data.remote.ApiException
 import io.github.yesterdaylz.kxqiandao.data.remote.ApiService
 import io.github.yesterdaylz.kxqiandao.data.remote.RetrofitClient
 import kotlinx.coroutines.CancellationException
@@ -73,6 +75,10 @@ class SignRepository(
     /** 查某人的在线状态 */
     suspend fun onlineStatus(uid: String): Result<OnlineStatusResponse> = call { api.online(uid) }
 
+    /** 查某人的全部签到记录 */
+    suspend fun records(uid: String): Result<List<RecordItem>> =
+        call { api.records(uid) }.map { it.data ?: emptyList() }
+
     /** 拉取全部正在签到的人 */
     suspend fun onlineMembers(): Result<List<ApiResponse.MemberData>> =
         call { api.recordOnline() }.map { it.data ?: emptyList() }
@@ -94,7 +100,12 @@ class SignRepository(
             if (response.isSuccessful && body != null) {
                 Result.success(body)
             } else {
-                Result.failure(IllegalStateException("HTTP ${response.code()}"))
+                val error = response.errorBody()?.string()?.let { raw ->
+                    runCatching { RetrofitClient.apiErrorAdapter.fromJson(raw) }.getOrNull()
+                }
+                Result.failure(
+                    ApiException(error?.code, error?.msg ?: "请求失败 HTTP ${response.code()}")
+                )
             }
         } catch (e: CancellationException) {
             throw e
