@@ -120,7 +120,14 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
         topBar = {
             if (showBars) {
                 MainTopBar(
-                    onLogoDoubleTap = { selectedTab = AppDestination.CheckIn },
+                    onLogoDoubleTap = {
+                        // 已经在签到页就手动刷新一次状态，否则切回签到页
+                        if (selectedTab == AppDestination.CheckIn) {
+                            viewModel.refreshStatus()
+                        } else {
+                            selectedTab = AppDestination.CheckIn
+                        }
+                    },
                     onScheduleSignOut = {
                         if (PermissionUtil.ensureBatteryOptimizationDisabled(context) &&
                             PermissionUtil.ensureExactAlarmPermission(context)

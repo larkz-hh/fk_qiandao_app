@@ -127,6 +127,12 @@ class MainViewModel : ViewModel() {
         _uiState.update { it.copy(netState = state) }
     }
 
+    /** 手动刷新：重判网络再拉一次状态 */
+    fun refreshStatus() {
+        refreshNetState()
+        checkOnlineStatus()
+    }
+
     /** 换网后状态大概率变了，等系统切完再刷 */
     private fun onNetworkChanged() {
         viewModelScope.launch {
