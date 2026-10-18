@@ -4,6 +4,7 @@ import io.github.yesterdaylz.kxqiandao.KexieApplication
 import io.github.yesterdaylz.kxqiandao.data.local.PreferencesManager
 import io.github.yesterdaylz.kxqiandao.data.model.ApiResponse
 import io.github.yesterdaylz.kxqiandao.data.model.ComplaintRequestBody
+import io.github.yesterdaylz.kxqiandao.data.model.HeatmapCache
 import io.github.yesterdaylz.kxqiandao.data.model.OnlineStatusResponse
 import io.github.yesterdaylz.kxqiandao.data.model.RecordItem
 import io.github.yesterdaylz.kxqiandao.data.model.SignResponse
@@ -20,6 +21,10 @@ class SignRepository(
     private val api: ApiService = RetrofitClient.api,
     private val prefs: PreferencesManager = KexieApplication.instance.preferencesManager,
 ) {
+
+    private val heatmapAdapter by lazy {
+        RetrofitClient.moshi.adapter(HeatmapCache::class.java)
+    }
 
     // 本地会话
 
@@ -62,6 +67,28 @@ class SignRepository(
     /** 清掉本次签到开始时间 */
     suspend fun clearStartTime() {
         prefs.saveStartTime(START_TIME_NONE)
+    }
+
+    // 热力图缓存
+
+    /** 读热力图缓存 */
+    suspend fun heatmapCache(): HeatmapCache? {
+        val raw = prefs.heatmapCache.first()
+        if (raw.isBlank()) return null
+        return runCatching { heatmapAdapter.fromJson(raw) }.getOrNull()
+    }
+
+    /** 存热力图缓存，每天多少分钟 */
+    suspend fun saveHeatmapCache(days: Map<String, Int>) {
+        val json = runCatching {
+            heatmapAdapter.toJson(HeatmapCache(fetchedAt = System.currentTimeMillis(), days = days))
+        }.getOrNull() ?: return
+        prefs.saveHeatmapCache(json)
+    }
+
+    /** 清掉热力图缓存 */
+    suspend fun clearHeatmapCache() {
+        prefs.saveHeatmapCache("")
     }
 
     // 网络

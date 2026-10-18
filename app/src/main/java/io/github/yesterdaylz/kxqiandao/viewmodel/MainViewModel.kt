@@ -19,6 +19,8 @@ import io.github.yesterdaylz.kxqiandao.data.remote.ApiException
 import io.github.yesterdaylz.kxqiandao.receiver.SignOutReceiver
 import io.github.yesterdaylz.kxqiandao.service.AutoService
 import io.github.yesterdaylz.kxqiandao.util.Constants
+import io.github.yesterdaylz.kxqiandao.util.CheckInHeatmap
+import io.github.yesterdaylz.kxqiandao.util.HeatmapBuilder
 import io.github.yesterdaylz.kxqiandao.util.NetworkUtil
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -41,6 +43,15 @@ private const val TIME_NULL = "本次签到开始时间: null"
 
 private const val REFRESH_THROTTLE_MS = 1500L
 
+/** 热力图一屏显示多少个月 */
+private const val HEATMAP_MONTHS = 6
+
+/** 翻页兜底上限，防止死循环 */
+private const val MAX_HEATMAP_OFFSET = 40
+
+/** 热力图缓存的保鲜期 */
+private const val HEATMAP_CACHE_TTL_MS = 6 * 60 * 60 * 1000L
+
 data class MainUiState(
     val uid: String = "",
     val selfUid: String = "",// 本地登录的人
@@ -52,6 +63,10 @@ data class MainUiState(
     val statusKnown: Boolean = true,// 服务器状态是否已确认
     val netState: NetworkUtil.NetState = NetworkUtil.NetState.Campus,// 当前网络环境
     val onlineUsers: List<ApiResponse.MemberData> = emptyList(),
+    val heatmap: CheckInHeatmap? = null,// 近半年签到热力图
+    val heatmapOffset: Int = 0,// 0 = 最近半年，-1 = 再往前半年
+    val heatmapMinOffset: Int = 0,// 最早能翻到哪半年
+    val heatmapLoading: Boolean = false,
     val searchText: String = "",
     val topFiveList: List<TopFiveItem> = emptyList(),
 ) {
@@ -84,6 +99,9 @@ class MainViewModel : ViewModel() {
     private var uidDirty = false
 
     private var lastRefreshAt = 0L
+
+    /** 热力图每天的分钟数，翻半年时复用 */
+    private var heatmapDays: Map<String, Int>? = null
 
     private val connectivityManager =
         KexieApplication.instance.getSystemService(ConnectivityManager::class.java)
@@ -320,6 +338,9 @@ class MainViewModel : ViewModel() {
                             }
                             _toastMessage.emit("签到成功，美美上工")
                             fetchOnlineUsers()
+                            // 多了一条记录，热力图缓存作废
+                            heatmapDays = null
+                            repo.clearHeatmapCache()
                         }
 
                         -201 -> {
@@ -376,6 +397,8 @@ class MainViewModel : ViewModel() {
                             }
                             _toastMessage.emit("签退成功，辛苦了")
                             stopAutoService()
+                            heatmapDays = null
+                            repo.clearHeatmapCache()
                         }
 
                         -202 -> {
@@ -426,6 +449,86 @@ class MainViewModel : ViewModel() {
                     it.printStackTrace()
                     _toastMessage.emit(it.userMessage("获取排行榜失败"))
                 }
+        }
+    }
+
+    /** 热力图有本地缓存先显示，超过 6 小时或强制刷新才去拉记录 */
+    fun fetchHeatmap(force: Boolean = false) {
+        if (_uiState.value.heatmapLoading) return
+        if (!force && heatmapDays != null) return
+        viewModelScope.launch {
+            if (!force) {
+                val cached = repo.heatmapCache()
+                if (cached != null) {
+                    applyHeatmapDays(cached.days)
+                    if (System.currentTimeMillis() - cached.fetchedAt < HEATMAP_CACHE_TTL_MS) return@launch
+                }
+            }
+            _uiState.update { it.copy(heatmapLoading = true) }
+            val uid = repo.savedUid()
+            if (uid == "null") {
+                _uiState.update { it.copy(heatmapLoading = false) }
+                return@launch
+            }
+            val records = repo.records(uid).getOrElse { error ->
+                _uiState.update { it.copy(heatmapLoading = false) }
+                _toastMessage.emit(error.userMessage("获取签到记录失败"))
+                return@launch
+            }
+            val days = HeatmapBuilder.dailyMinutes(records)
+            repo.saveHeatmapCache(days)
+            applyHeatmapDays(days)
+            if (force) _toastMessage.emit("签到记录已刷新")
+        }
+    }
+
+    /** 往前/往后翻半年，step 为 -1 表示更早的半年 */
+    fun shiftHeatmap(step: Int) {
+        val state = _uiState.value
+        val target = (state.heatmapOffset + step).coerceIn(state.heatmapMinOffset, 0)
+        if (target == state.heatmapOffset) return
+        rebuildHeatmap(target)
+    }
+
+    private fun applyHeatmapDays(days: Map<String, Int>) {
+        heatmapDays = days
+        val minOffset = days.keys.minOrNull()?.let(::minHeatmapOffset) ?: 0
+        _uiState.update {
+            it.copy(
+                heatmapMinOffset = minOffset,
+                heatmapOffset = it.heatmapOffset.coerceIn(minOffset, 0),
+                heatmapLoading = false,
+            )
+        }
+        rebuildHeatmap(_uiState.value.heatmapOffset)
+    }
+
+    /** 最早那条记录落在哪半年 */
+    private fun minHeatmapOffset(earliest: String): Int {
+        var offset = 0
+        while (offset > -MAX_HEATMAP_OFFSET && windowStart(offset) > earliest) {
+            offset--
+        }
+        return offset
+    }
+
+    /** 某个半年窗口的起始日（周一），yyyy-MM-dd */
+    private fun windowStart(offset: Int): String {
+        val anchor = Calendar.getInstance().apply { add(Calendar.MONTH, offset * HEATMAP_MONTHS) }
+        val start = (anchor.clone() as Calendar).apply { add(Calendar.MONTH, -HEATMAP_MONTHS) }
+        start.add(Calendar.DAY_OF_YEAR, -((start.get(Calendar.DAY_OF_WEEK) + 5) % 7))
+        return SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(start.time)
+    }
+
+    private fun rebuildHeatmap(offset: Int) {
+        val days = heatmapDays ?: return
+        val anchor = Calendar.getInstance().apply { add(Calendar.MONTH, offset * HEATMAP_MONTHS) }
+        _uiState.update {
+            it.copy(
+                heatmap = HeatmapBuilder.build(days, HEATMAP_MONTHS, anchor),
+                heatmapOffset = offset,
+                heatmapLoading = false,
+            )
         }
     }
 

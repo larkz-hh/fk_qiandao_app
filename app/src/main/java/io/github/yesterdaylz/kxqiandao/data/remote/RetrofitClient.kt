@@ -10,7 +10,7 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
-    private val moshi = Moshi.Builder().build()
+    internal val moshi = Moshi.Builder().build()
 
     /** 解析非 2xx 响应体里的 code/msg */
     val apiErrorAdapter: JsonAdapter<ApiError> by lazy { moshi.adapter(ApiError::class.java) }

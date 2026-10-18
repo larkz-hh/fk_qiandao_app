@@ -197,7 +197,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                         )
                     }
                     entry<AppDestination.Mine> {
-                        MineTab(padding = padding)
+                        MineTab(padding = padding, uiState = uiState, viewModel = viewModel)
                     }
                 }
             )
