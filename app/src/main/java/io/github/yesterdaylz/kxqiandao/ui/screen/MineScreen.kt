@@ -1,6 +1,7 @@
 package io.github.yesterdaylz.kxqiandao.ui.screen
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -36,6 +37,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.yesterdaylz.kxqiandao.ui.navigation.AppDestination
+import io.github.yesterdaylz.kxqiandao.ui.navigation.LocalTabNavigator
+import io.github.yesterdaylz.kxqiandao.ui.theme.Blue1
 import io.github.yesterdaylz.kxqiandao.ui.theme.GrayOffline
 import io.github.yesterdaylz.kxqiandao.util.CheckInHeatmap
 import io.github.yesterdaylz.kxqiandao.viewmodel.MainUiState
@@ -52,6 +56,7 @@ fun MineTab(
     viewModel: MainViewModel
 ) {
     LaunchedEffect(Unit) { viewModel.fetchHeatmap() }
+    val navigator = LocalTabNavigator.current
 
     Column(
         modifier = Modifier
@@ -73,8 +78,32 @@ fun MineTab(
             onRefresh = { viewModel.fetchHeatmap(force = true) }
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(6.dp))
+        RecordsEntry(onClick = { navigator.navigateTo(AppDestination.Records) })
+
+        Spacer(modifier = Modifier.height(12.dp))
         Text(text = "更多功能施工中，敬请期待", fontSize = 13.sp, color = GrayOffline)
+    }
+}
+
+/** 进入完整签到记录 */
+@Composable
+private fun RecordsEntry(onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 4.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = "查看全部签到记录", fontSize = 14.sp, color = Blue1)
+        Spacer(modifier = Modifier.weight(1f))
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = Blue1,
+            modifier = Modifier.size(18.dp)
+        )
     }
 }
 

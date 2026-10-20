@@ -40,6 +40,10 @@ object HeatmapBuilder {
         return minutesByDay
     }
 
+    /** 单条记录的时长（分钟） */
+    fun durationMinutes(record: RecordItem): Int =
+        minutesOf(record, SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT))
+
     /** days 是 日期 -> 分钟，单条记录最长按 24 小时算 */
     fun build(days: Map<String, Int>, months: Int = 6, now: Calendar = Calendar.getInstance()): CheckInHeatmap {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT)

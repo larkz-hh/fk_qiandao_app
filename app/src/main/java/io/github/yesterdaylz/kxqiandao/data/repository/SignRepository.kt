@@ -7,6 +7,7 @@ import io.github.yesterdaylz.kxqiandao.data.model.ComplaintRequestBody
 import io.github.yesterdaylz.kxqiandao.data.model.HeatmapCache
 import io.github.yesterdaylz.kxqiandao.data.model.OnlineStatusResponse
 import io.github.yesterdaylz.kxqiandao.data.model.RecordItem
+import io.github.yesterdaylz.kxqiandao.data.model.RecordsCache
 import io.github.yesterdaylz.kxqiandao.data.model.SignResponse
 import io.github.yesterdaylz.kxqiandao.data.model.TopFiveItem
 import io.github.yesterdaylz.kxqiandao.data.model.UserId
@@ -24,6 +25,10 @@ class SignRepository(
 
     private val heatmapAdapter by lazy {
         RetrofitClient.moshi.adapter(HeatmapCache::class.java)
+    }
+
+    private val recordsAdapter by lazy {
+        RetrofitClient.moshi.adapter(RecordsCache::class.java)
     }
 
     // 本地会话
@@ -89,6 +94,29 @@ class SignRepository(
     /** 清掉热力图缓存 */
     suspend fun clearHeatmapCache() {
         prefs.saveHeatmapCache("")
+    }
+
+    /** 读签到记录缓存 */
+    suspend fun recordsCache(): RecordsCache? {
+        val raw = prefs.recordsCache.first()
+        if (raw.isBlank()) return null
+        return runCatching { recordsAdapter.fromJson(raw) }.getOrNull()
+    }
+
+    /** 存签到记录缓存 */
+    suspend fun saveRecordsCache(records: List<RecordItem>) {
+        val compact = records.map {
+            it.copy(id = null, userId = null, userName = null, userDept = null)
+        }
+        val json = runCatching {
+            recordsAdapter.toJson(RecordsCache(fetchedAt = System.currentTimeMillis(), items = compact))
+        }.getOrNull() ?: return
+        prefs.saveRecordsCache(json)
+    }
+
+    /** 清掉签到记录缓存 */
+    suspend fun clearRecordsCache() {
+        prefs.saveRecordsCache("")
     }
 
     // 网络

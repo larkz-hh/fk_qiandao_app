@@ -13,6 +13,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.yesterdaylz.kxqiandao.KexieApplication
 import io.github.yesterdaylz.kxqiandao.data.model.ApiResponse
+import io.github.yesterdaylz.kxqiandao.data.model.RecordItem
 import io.github.yesterdaylz.kxqiandao.data.model.TopFiveItem
 import io.github.yesterdaylz.kxqiandao.data.repository.SignRepository
 import io.github.yesterdaylz.kxqiandao.data.remote.ApiException
@@ -50,7 +51,7 @@ private const val HEATMAP_MONTHS = 6
 private const val MAX_HEATMAP_OFFSET = 40
 
 /** 热力图缓存的保鲜期 */
-private const val HEATMAP_CACHE_TTL_MS = 6 * 60 * 60 * 1000L
+private const val CACHE_TTL_MS = 6 * 60 * 60 * 1000L
 
 data class MainUiState(
     val uid: String = "",
@@ -67,6 +68,9 @@ data class MainUiState(
     val heatmapOffset: Int = 0,// 0 = 最近半年，-1 = 再往前半年
     val heatmapMinOffset: Int = 0,// 最早能翻到哪半年
     val heatmapLoading: Boolean = false,
+    val records: List<RecordItem> = emptyList(),// 全部签到记录
+    val recordsLoading: Boolean = false,
+    val recordsStale: Boolean = false,// 列表来自本地缓存、没刷新成功
     val searchText: String = "",
     val topFiveList: List<TopFiveItem> = emptyList(),
 ) {
@@ -102,6 +106,9 @@ class MainViewModel : ViewModel() {
 
     /** 热力图每天的分钟数，翻半年时复用 */
     private var heatmapDays: Map<String, Int>? = null
+
+    /** 原始签到记录，热力图和记录列表共用一次请求 */
+    private var recordItems: List<RecordItem>? = null
 
     private val connectivityManager =
         KexieApplication.instance.getSystemService(ConnectivityManager::class.java)
@@ -340,7 +347,9 @@ class MainViewModel : ViewModel() {
                             fetchOnlineUsers()
                             // 多了一条记录，热力图缓存作废
                             heatmapDays = null
+                            recordItems = null
                             repo.clearHeatmapCache()
+                            repo.clearRecordsCache()
                         }
 
                         -201 -> {
@@ -398,7 +407,9 @@ class MainViewModel : ViewModel() {
                             _toastMessage.emit("签退成功，辛苦了")
                             stopAutoService()
                             heatmapDays = null
+                            recordItems = null
                             repo.clearHeatmapCache()
+                            repo.clearRecordsCache()
                         }
 
                         -202 -> {
@@ -461,7 +472,7 @@ class MainViewModel : ViewModel() {
                 val cached = repo.heatmapCache()
                 if (cached != null) {
                     applyHeatmapDays(cached.days)
-                    if (System.currentTimeMillis() - cached.fetchedAt < HEATMAP_CACHE_TTL_MS) return@launch
+                    if (System.currentTimeMillis() - cached.fetchedAt < CACHE_TTL_MS) return@launch
                 }
             }
             _uiState.update { it.copy(heatmapLoading = true) }
@@ -475,10 +486,52 @@ class MainViewModel : ViewModel() {
                 _toastMessage.emit(error.userMessage("获取签到记录失败"))
                 return@launch
             }
+            recordItems = records
             val days = HeatmapBuilder.dailyMinutes(records)
             repo.saveHeatmapCache(days)
+            repo.saveRecordsCache(records)
             applyHeatmapDays(days)
             if (force) _toastMessage.emit("签到记录已刷新")
+        }
+    }
+
+    /** 拉全部签到记录，记录列表页用；有缓存先显示，支持离线 */
+    fun fetchRecords(force: Boolean = false) {
+        if (_uiState.value.recordsLoading) return
+        val memory = recordItems
+        if (!force && memory != null) {
+            _uiState.update { it.copy(records = memory) }
+            return
+        }
+        viewModelScope.launch {
+            if (!force) {
+                val cached = repo.recordsCache()
+                if (cached != null) {
+                    recordItems = cached.items
+                    _uiState.update { it.copy(records = cached.items) }
+                    if (System.currentTimeMillis() - cached.fetchedAt < CACHE_TTL_MS) return@launch
+                }
+            }
+            _uiState.update { it.copy(recordsLoading = true) }
+            val uid = repo.savedUid()
+            val records = if (uid == "null") {
+                emptyList()
+            } else {
+                repo.records(uid).getOrElse { error ->
+                    _uiState.update {
+                        it.copy(recordsLoading = false, recordsStale = recordItems != null)
+                    }
+                    if (recordItems == null) {
+                        _toastMessage.emit(error.userMessage("获取签到记录失败"))
+                    }
+                    return@launch
+                }
+            }
+            recordItems = records
+            repo.saveRecordsCache(records)
+            _uiState.update {
+                it.copy(records = records, recordsLoading = false, recordsStale = false)
+            }
         }
     }
 

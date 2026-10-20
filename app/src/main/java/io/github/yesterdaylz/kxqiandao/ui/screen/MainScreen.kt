@@ -199,6 +199,14 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                     entry<AppDestination.Mine> {
                         MineTab(padding = padding, uiState = uiState, viewModel = viewModel)
                     }
+                    entry<AppDestination.Records> {
+                        RecordsScreen(
+                            padding = padding,
+                            uiState = uiState,
+                            viewModel = viewModel,
+                            onBack = { navState.navigator.goBack() }
+                        )
+                    }
                 }
             )
         }
