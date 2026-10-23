@@ -71,6 +71,8 @@ data class MainUiState(
     val records: List<RecordItem> = emptyList(),// 全部签到记录
     val recordsLoading: Boolean = false,
     val recordsStale: Boolean = false,// 列表来自本地缓存、没刷新成功
+    val totalSignDays: Int = 0,// 累计签到天数
+    val totalSignMinutes: Int = 0,// 累计签到分钟数
     val searchText: String = "",
     val topFiveList: List<TopFiveItem> = emptyList(),
 ) {
@@ -529,9 +531,14 @@ class MainViewModel : ViewModel() {
             }
             recordItems = records
             repo.saveRecordsCache(records)
+            // 顺手把热力图和累计数据也更新了，免得两个页面不一致
+            val days = HeatmapBuilder.dailyMinutes(records)
+            repo.saveHeatmapCache(days)
+            applyHeatmapDays(days)
             _uiState.update {
                 it.copy(records = records, recordsLoading = false, recordsStale = false)
             }
+            if (force) _toastMessage.emit("签到记录已刷新")
         }
     }
 
@@ -551,6 +558,8 @@ class MainViewModel : ViewModel() {
                 heatmapMinOffset = minOffset,
                 heatmapOffset = it.heatmapOffset.coerceIn(minOffset, 0),
                 heatmapLoading = false,
+                totalSignDays = days.size,
+                totalSignMinutes = days.values.sum(),
             )
         }
         rebuildHeatmap(_uiState.value.heatmapOffset)

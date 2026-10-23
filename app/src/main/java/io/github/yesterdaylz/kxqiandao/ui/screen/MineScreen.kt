@@ -65,7 +65,12 @@ fun MineTab(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
-        ProfileHeader(uid = uiState.uid, uname = uiState.uname)
+        ProfileHeader(
+            uid = uiState.uid,
+            uname = uiState.uname,
+            totalDays = uiState.totalSignDays,
+            totalMinutes = uiState.totalSignMinutes
+        )
 
         Spacer(modifier = Modifier.height(20.dp))
         HeatmapCard(
@@ -107,15 +112,23 @@ private fun RecordsEntry(onClick: () -> Unit) {
     }
 }
 
-/** 姓名 / 学号 */
+/** 姓名 / 学号 / 累计签到 */
 @Composable
-private fun ProfileHeader(uid: String, uname: String) {
+private fun ProfileHeader(uid: String, uname: String, totalDays: Int, totalMinutes: Int) {
     val name = uname.takeUnless { it.isBlank() || it == "null" } ?: "未登录"
     val id = uid.takeUnless { it.isBlank() || it == "null" } ?: "—"
     Column {
         Text(text = name, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(4.dp))
         Text(text = "学号 $id", fontSize = 13.sp, color = GrayOffline)
+        if (totalDays > 0) {
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "累计 $totalDays 天 · ${formatHours(totalMinutes)} 小时",
+                fontSize = 13.sp,
+                color = Blue1
+            )
+        }
     }
 }
 
