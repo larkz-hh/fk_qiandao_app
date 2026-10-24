@@ -30,12 +30,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.yesterdaylz.kxqiandao.ui.component.OnlineItem
-import io.github.yesterdaylz.kxqiandao.ui.theme.Blue1
-import io.github.yesterdaylz.kxqiandao.ui.theme.DividerGray
-import io.github.yesterdaylz.kxqiandao.ui.theme.GrayOffline
-import io.github.yesterdaylz.kxqiandao.ui.theme.GreenOnline
-import io.github.yesterdaylz.kxqiandao.ui.theme.TextBlack
-import io.github.yesterdaylz.kxqiandao.ui.theme.TextWhite
+import io.github.yesterdaylz.kxqiandao.ui.theme.KxTheme
 import io.github.yesterdaylz.kxqiandao.util.NetworkUtil
 import io.github.yesterdaylz.kxqiandao.viewmodel.MainUiState
 import io.github.yesterdaylz.kxqiandao.viewmodel.MainViewModel
@@ -49,6 +44,7 @@ fun CheckInTab(
     uiState: MainUiState,
     viewModel: MainViewModel
 ) {
+    val colors = KxTheme.colors
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -92,13 +88,14 @@ fun CheckInTab(
             shape = RoundedCornerShape(12.dp),
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp, pressedElevation = 1.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (uiState.online) Color.White else Blue1
+                containerColor = if (uiState.online) colors.surface else colors.primary,
+                contentColor = if (uiState.online) colors.danger else colors.onPrimary
             )
         ) {
             Text(
                 text = if (uiState.online) "签退" else "签到",
                 fontSize = 18.sp,
-                color = if (uiState.online) Color.Red else Color.White
+                color = if (uiState.online) colors.danger else colors.onPrimary
             )
         }
 
@@ -108,7 +105,7 @@ fun CheckInTab(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(8.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+                colors = CardDefaults.cardColors(containerColor = colors.surface)
             ) {
                 Column(modifier = Modifier.padding(8.dp)) {
                     Text(
@@ -139,7 +136,7 @@ fun CheckInTab(
                                 onSignOut = { viewModel.signOutOther(user.userId.toString()) },
                                 onComplaint = { viewModel.complaint(user) }
                             )
-                            HorizontalDivider(color = DividerGray, thickness = 1.dp)
+                            HorizontalDivider(color = colors.divider, thickness = 1.dp)
                         }
                     }
                 }
@@ -160,15 +157,16 @@ private fun OnlineStatusCard(
     online: Boolean,
     statusKnown: Boolean,
 ) {
+    val colors = KxTheme.colors
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(15.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (online) GreenOnline else GrayOffline
+            containerColor = if (online) colors.success else colors.mutedContainer
         )
     ) {
         Column(modifier = Modifier.padding(15.dp)) {
-            val textColor = if (online) TextBlack else TextWhite
+            val textColor = if (online) colors.onSuccess else colors.onMuted
             InfoRow("学号", uid, textColor)
             Spacer(modifier = Modifier.height(5.dp))
             InfoRow("姓名", uname, textColor)
@@ -189,10 +187,11 @@ private fun OnlineStatusCard(
 /** 不在科协网时的提示 */
 @Composable
 private fun CampusNetworkHint(state: NetworkUtil.NetState) {
+    val colors = KxTheme.colors
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF4CE))
+        colors = CardDefaults.cardColors(containerColor = colors.warningContainer)
     ) {
         Text(
             text = when (state) {
@@ -201,7 +200,7 @@ private fun CampusNetworkHint(state: NetworkUtil.NetState) {
             },
             modifier = Modifier.padding(12.dp),
             fontSize = 13.sp,
-            color = Color(0xFF8A6D3B)
+            color = colors.onWarningContainer
         )
     }
 }

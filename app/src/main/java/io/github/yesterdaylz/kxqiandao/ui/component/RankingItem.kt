@@ -14,9 +14,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.yesterdaylz.kxqiandao.data.model.TopFiveItem
+import io.github.yesterdaylz.kxqiandao.ui.theme.KxTheme
 
 @Composable
 fun RankingItem(rank: Int, item: TopFiveItem) {
+    val colors = KxTheme.colors
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -28,7 +30,7 @@ fun RankingItem(rank: Int, item: TopFiveItem) {
             text = "$rank",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
-            color = if (rank <= 3) Color(0xFFFF9800) else Color.Gray,
+            color = if (rank <= 3) Color(0xFFFF9800) else colors.muted,
             modifier = Modifier.width(36.dp)
         )
 
@@ -42,7 +44,7 @@ fun RankingItem(rank: Int, item: TopFiveItem) {
             Text(
                 text = item.userDept ?: "未知部门",
                 fontSize = 12.sp,
-                color = Color.Gray
+                color = colors.muted
             )
         }
         // 签到总时长
@@ -50,7 +52,7 @@ fun RankingItem(rank: Int, item: TopFiveItem) {
             text = item.totalTime ?: "0",
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
-            color = io.github.yesterdaylz.kxqiandao.ui.theme.Blue1
+            color = colors.primary
         )
     }
 }

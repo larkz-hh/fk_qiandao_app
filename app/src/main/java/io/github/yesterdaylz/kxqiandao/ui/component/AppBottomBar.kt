@@ -10,9 +10,9 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import io.github.yesterdaylz.kxqiandao.ui.navigation.AppDestination
+import io.github.yesterdaylz.kxqiandao.ui.theme.KxTheme
 
 private data class BottomTab(
     val destination: AppDestination,
@@ -39,7 +39,7 @@ fun AppBottomBar(
     selected: AppDestination,
     onSelect: (AppDestination) -> Unit,
 ) {
-    NavigationBar(containerColor = Color(0xFFF6F6F6)) {
+    NavigationBar(containerColor = KxTheme.colors.surface) {
         BottomTabs.forEach { tab ->
             NavigationBarItem(
                 selected = selected == tab.destination,

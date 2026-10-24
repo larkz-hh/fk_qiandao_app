@@ -10,8 +10,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import io.github.yesterdaylz.kxqiandao.ui.screen.MainScreen
-import io.github.yesterdaylz.kxqiandao.ui.theme.BackgroundGray
 import io.github.yesterdaylz.kxqiandao.ui.theme.KexieTheme
+import io.github.yesterdaylz.kxqiandao.ui.theme.KxTheme
 import io.github.yesterdaylz.kxqiandao.util.PermissionUtil
 
 class MainActivity : ComponentActivity() {
@@ -26,9 +26,11 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             KexieTheme {
+                val colors = KxTheme.colors
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = BackgroundGray
+                    color = colors.background,
+                    contentColor = colors.onSurface
                 ) {
                     MainScreen()
                 }

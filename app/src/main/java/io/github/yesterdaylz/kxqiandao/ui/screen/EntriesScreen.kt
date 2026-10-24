@@ -28,17 +28,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.yesterdaylz.kxqiandao.ui.navigation.AppDestination
 import io.github.yesterdaylz.kxqiandao.ui.navigation.LocalTabNavigator
-import io.github.yesterdaylz.kxqiandao.ui.theme.Blue1
-import io.github.yesterdaylz.kxqiandao.ui.theme.Blue2
-import io.github.yesterdaylz.kxqiandao.ui.theme.DividerGray
-import io.github.yesterdaylz.kxqiandao.ui.theme.GrayOffline
+import io.github.yesterdaylz.kxqiandao.ui.theme.KxTheme
 
 /**
  * 入口项
@@ -102,12 +98,13 @@ fun EntriesTab(padding: PaddingValues) {
 /** 单个入口卡片 */
 @Composable
 private fun EntryCard(entry: AppEntry, onClick: () -> Unit) {
+    val colors = KxTheme.colors
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = colors.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
@@ -119,14 +116,14 @@ private fun EntryCard(entry: AppEntry, onClick: () -> Unit) {
             Box(
                 modifier = Modifier
                     .size(42.dp)
-                    .background(Blue2.copy(alpha = 0.28f), RoundedCornerShape(12.dp)),
+                    .background(colors.primary.copy(alpha = 0.12f), RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = entry.icon,
                     contentDescription = null,
                     modifier = Modifier.size(22.dp),
-                    tint = Blue1
+                    tint = colors.primary
                 )
             }
 
@@ -135,13 +132,13 @@ private fun EntryCard(entry: AppEntry, onClick: () -> Unit) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = entry.title, fontSize = 16.sp, fontWeight = FontWeight.Medium)
                 Spacer(modifier = Modifier.height(3.dp))
-                Text(text = entry.subtitle, fontSize = 12.sp, color = GrayOffline)
+                Text(text = entry.subtitle, fontSize = 12.sp, color = colors.muted)
             }
 
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
-                tint = DividerGray
+                tint = colors.divider
             )
         }
     }

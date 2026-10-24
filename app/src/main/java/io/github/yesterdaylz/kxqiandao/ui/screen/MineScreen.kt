@@ -39,8 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.yesterdaylz.kxqiandao.ui.navigation.AppDestination
 import io.github.yesterdaylz.kxqiandao.ui.navigation.LocalTabNavigator
-import io.github.yesterdaylz.kxqiandao.ui.theme.Blue1
-import io.github.yesterdaylz.kxqiandao.ui.theme.GrayOffline
+import io.github.yesterdaylz.kxqiandao.ui.theme.KxTheme
 import io.github.yesterdaylz.kxqiandao.util.CheckInHeatmap
 import io.github.yesterdaylz.kxqiandao.viewmodel.MainUiState
 import io.github.yesterdaylz.kxqiandao.viewmodel.MainViewModel
@@ -57,6 +56,7 @@ fun MineTab(
 ) {
     LaunchedEffect(Unit) { viewModel.fetchHeatmap() }
     val navigator = LocalTabNavigator.current
+    val colors = KxTheme.colors
 
     Column(
         modifier = Modifier
@@ -87,13 +87,14 @@ fun MineTab(
         RecordsEntry(onClick = { navigator.navigateTo(AppDestination.Records) })
 
         Spacer(modifier = Modifier.height(12.dp))
-        Text(text = "更多功能施工中，敬请期待", fontSize = 13.sp, color = GrayOffline)
+        Text(text = "更多功能施工中，敬请期待", fontSize = 13.sp, color = colors.muted)
     }
 }
 
 /** 进入完整签到记录 */
 @Composable
 private fun RecordsEntry(onClick: () -> Unit) {
+    val colors = KxTheme.colors
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -101,12 +102,12 @@ private fun RecordsEntry(onClick: () -> Unit) {
             .padding(horizontal = 4.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = "查看全部签到记录", fontSize = 14.sp, color = Blue1)
+        Text(text = "查看全部签到记录", fontSize = 14.sp, color = colors.primary)
         Spacer(modifier = Modifier.weight(1f))
         Icon(
             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = null,
-            tint = Blue1,
+            tint = colors.primary,
             modifier = Modifier.size(18.dp)
         )
     }
@@ -115,18 +116,19 @@ private fun RecordsEntry(onClick: () -> Unit) {
 /** 姓名 / 学号 / 累计签到 */
 @Composable
 private fun ProfileHeader(uid: String, uname: String, totalDays: Int, totalMinutes: Int) {
+    val colors = KxTheme.colors
     val name = uname.takeUnless { it.isBlank() || it == "null" } ?: "未登录"
     val id = uid.takeUnless { it.isBlank() || it == "null" } ?: "—"
     Column {
         Text(text = name, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(4.dp))
-        Text(text = "学号 $id", fontSize = 13.sp, color = GrayOffline)
+        Text(text = "学号 $id", fontSize = 13.sp, color = colors.muted)
         if (totalDays > 0) {
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = "累计 $totalDays 天 · ${formatHours(totalMinutes)} 小时",
                 fontSize = 13.sp,
-                color = Blue1
+                color = colors.primary
             )
         }
     }
@@ -143,10 +145,11 @@ private fun HeatmapCard(
     onNext: () -> Unit,
     onRefresh: () -> Unit
 ) {
+    val colors = KxTheme.colors
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(15.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = colors.surface)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -192,12 +195,12 @@ private fun HeatmapCard(
                 null if loading -> Text(
                     text = "加载中…",
                     fontSize = 13.sp,
-                    color = GrayOffline
+                    color = colors.muted
                 )
                 null -> Text(
                     text = "暂无签到记录",
                     fontSize = 13.sp,
-                    color = GrayOffline
+                    color = colors.muted
                 )
                 else -> {
                     Row(
@@ -207,7 +210,7 @@ private fun HeatmapCard(
                         Text(
                             text = "${heatmap.startDate} ~ ${heatmap.endDate}",
                             fontSize = 11.sp,
-                            color = GrayOffline,
+                            color = colors.muted,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f, fill = false)
@@ -215,7 +218,7 @@ private fun HeatmapCard(
                         Text(
                             text = "共 ${formatHours(heatmap.totalMinutes)} 小时 · ${heatmap.activeDays} 天",
                             fontSize = 11.sp,
-                            color = GrayOffline,
+                            color = colors.muted,
                             maxLines = 1
                         )
                     }
@@ -231,6 +234,7 @@ private fun HeatmapCard(
 
 @Composable
 private fun HeatmapGrid(heatmap: CheckInHeatmap) {
+    val heatColors = KxTheme.colors.heatmap
     Canvas(modifier = Modifier.fillMaxWidth().height(104.dp)) {
         val gap = 3.dp.toPx()
         val columns = heatmap.weeks.size
@@ -248,7 +252,7 @@ private fun HeatmapGrid(heatmap: CheckInHeatmap) {
             week.forEachIndexed { rowIndex, day ->
                 if (day != null) {
                     drawRoundRect(
-                        color = heatColor(day.level),
+                        color = heatColor(heatColors, day.level),
                         topLeft = Offset(
                             left + columnIndex * (cell + gap),
                             top + rowIndex * (cell + gap)
@@ -264,34 +268,30 @@ private fun HeatmapGrid(heatmap: CheckInHeatmap) {
 
 @Composable
 private fun HeatmapLegend() {
+    val colors = KxTheme.colors
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.End,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = "少", fontSize = 11.sp, color = GrayOffline)
+        Text(text = "少", fontSize = 11.sp, color = colors.muted)
         Spacer(modifier = Modifier.width(4.dp))
         for (level in 0..4) {
             Canvas(modifier = Modifier.size(10.dp)) {
                 drawRoundRect(
-                    color = heatColor(level),
+                    color = heatColor(colors.heatmap, level),
                     cornerRadius = CornerRadius(2.dp.toPx())
                 )
             }
             Spacer(modifier = Modifier.width(3.dp))
         }
         Spacer(modifier = Modifier.width(1.dp))
-        Text(text = "多", fontSize = 11.sp, color = GrayOffline)
+        Text(text = "多", fontSize = 11.sp, color = colors.muted)
     }
 }
 
-private fun heatColor(level: Int): Color = when (level) {
-    1 -> Color(0xFF9BE9A8)
-    2 -> Color(0xFF40C463)
-    3 -> Color(0xFF30A14E)
-    4 -> Color(0xFF216E39)
-    else -> Color(0xFFEBEDF0)
-}
+private fun heatColor(colors: List<Color>, level: Int): Color =
+    colors.getOrElse(level) { colors.first() }
 
 private fun formatHours(minutes: Int): String =
     String.format(Locale.getDefault(), "%.1f", minutes / 60f)

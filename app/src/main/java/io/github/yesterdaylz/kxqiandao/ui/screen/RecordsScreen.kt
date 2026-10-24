@@ -40,10 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.yesterdaylz.kxqiandao.data.model.RecordItem
-import io.github.yesterdaylz.kxqiandao.ui.theme.Blue1
-import io.github.yesterdaylz.kxqiandao.ui.theme.DividerGray
-import io.github.yesterdaylz.kxqiandao.ui.theme.GrayOffline
-import io.github.yesterdaylz.kxqiandao.ui.theme.GreenOnline
+import io.github.yesterdaylz.kxqiandao.ui.theme.KxTheme
 import io.github.yesterdaylz.kxqiandao.util.HeatmapBuilder
 import io.github.yesterdaylz.kxqiandao.viewmodel.MainUiState
 import io.github.yesterdaylz.kxqiandao.viewmodel.MainViewModel
@@ -62,6 +59,7 @@ fun RecordsScreen(
     onBack: () -> Unit
 ) {
     LaunchedEffect(Unit) { viewModel.fetchRecords() }
+    val colors = KxTheme.colors
 
     val pageCount = ((uiState.records.size + PAGE_SIZE - 1) / PAGE_SIZE).coerceAtLeast(1)
     var page by rememberSaveable { mutableStateOf(0) }
@@ -89,7 +87,7 @@ fun RecordsScreen(
             Text(
                 text = "离线缓存，可能不是最新",
                 fontSize = 12.sp,
-                color = GrayOffline,
+                color = colors.muted,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 2.dp)
             )
         }
@@ -106,7 +104,7 @@ fun RecordsScreen(
                     items(pageItems) { record ->
                         RecordRow(record)
                         HorizontalDivider(
-                            color = DividerGray,
+                            color = colors.divider,
                             thickness = 1.dp,
                             modifier = Modifier.padding(horizontal = 20.dp)
                         )
@@ -154,6 +152,7 @@ private fun RecordsTopBar(onBack: () -> Unit, onRefresh: () -> Unit, refreshing:
 /** 底部分页：‹ 1 … 5 6 7 … 12 › */
 @Composable
 private fun PageBar(page: Int, pageCount: Int, onSelect: (Int) -> Unit) {
+    val colors = KxTheme.colors
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -168,7 +167,7 @@ private fun PageBar(page: Int, pageCount: Int, onSelect: (Int) -> Unit) {
                 Text(
                     text = "…",
                     fontSize = 12.sp,
-                    color = GrayOffline,
+                    color = colors.muted,
                     modifier = Modifier.padding(horizontal = 4.dp)
                 )
             } else {
@@ -201,15 +200,16 @@ private fun PageArrow(forward: Boolean, enabled: Boolean, onClick: () -> Unit) {
 
 @Composable
 private fun PageChip(text: String, selected: Boolean, onClick: () -> Unit) {
+    val colors = KxTheme.colors
     Text(
         text = text,
         fontSize = 13.sp,
-        color = if (selected) Color.White else GrayOffline,
+        color = if (selected) colors.onPrimary else colors.muted,
         fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal,
         modifier = Modifier
             .padding(horizontal = 2.dp)
             .clip(RoundedCornerShape(8.dp))
-            .background(if (selected) Blue1 else Color.Transparent)
+            .background(if (selected) colors.primary else Color.Transparent)
             .clickable(onClick = onClick)
             .padding(horizontal = 8.dp, vertical = 5.dp)
     )
@@ -236,6 +236,7 @@ private fun pageNumbers(current: Int, count: Int): List<Int?> {
 
 @Composable
 private fun RecordRow(record: RecordItem) {
+    val colors = KxTheme.colors
     val duration = durationText(HeatmapBuilder.durationMinutes(record))
     val detail = listOfNotNull(
         record.userLocation?.takeIf { it.isNotBlank() },
@@ -243,9 +244,9 @@ private fun RecordRow(record: RecordItem) {
     ).joinToString(" · ")
     val status = record.status.orEmpty()
     val statusColor = when (status) {
-        "在线" -> GreenOnline
-        "被迫下线" -> Color(0xFFE53935)
-        else -> GrayOffline
+        "在线" -> colors.success
+        "被迫下线" -> colors.danger
+        else -> colors.muted
     }
 
     Row(
@@ -257,7 +258,7 @@ private fun RecordRow(record: RecordItem) {
         Column(modifier = Modifier.weight(1f)) {
             Text(text = record.start ?: "—", fontSize = 14.sp)
             Spacer(modifier = Modifier.height(3.dp))
-            Text(text = detail, fontSize = 12.sp, color = GrayOffline)
+            Text(text = detail, fontSize = 12.sp, color = colors.muted)
         }
         Text(
             text = status,
@@ -274,7 +275,7 @@ private fun Hint(text: String) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(text = text, fontSize = 13.sp, color = GrayOffline)
+        Text(text = text, fontSize = 13.sp, color = KxTheme.colors.muted)
     }
 }
 

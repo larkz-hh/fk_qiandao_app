@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import io.github.yesterdaylz.kxqiandao.data.model.ApiResponse
+import io.github.yesterdaylz.kxqiandao.ui.theme.KxTheme
 
 @Composable
 fun OnlineItem(
@@ -36,6 +37,7 @@ fun OnlineItem(
 ) {
     var showComplaintDialog by remember { mutableStateOf(false) }
     var showSignOutDialog by remember { mutableStateOf(false) }
+    val colors = KxTheme.colors
 
     Row(
         modifier = Modifier
@@ -85,12 +87,12 @@ fun OnlineItem(
                     shape = RoundedCornerShape(6.dp),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp, pressedElevation = 1.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFF2F2F2)
+                        containerColor = colors.surfaceVariant
                     ),
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                     modifier = Modifier.height(28.dp).fillMaxWidth(0.9f)
                 ) {
-                    Text("签退", fontSize = 11.sp, color = Color.Black)
+                    Text("签退", fontSize = 11.sp, color = colors.onSurface)
                 }
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -101,12 +103,12 @@ fun OnlineItem(
                     shape = RoundedCornerShape(6.dp),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 2.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFF2F2F2)
+                        containerColor = colors.surfaceVariant
                     ),
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                     modifier = Modifier.height(28.dp).fillMaxWidth(0.9f)
                 ) {
-                    Text("举报", fontSize = 11.sp, color = Color.Black)
+                    Text("举报", fontSize = 11.sp, color = colors.onSurface)
                 }
             }
         }
@@ -140,10 +142,11 @@ fun ComplaintDialog(
     onDismissText: () -> Unit,
     onConfirm: () -> Unit
 ) {
+    val colors = KxTheme.colors
     Dialog(onDismissRequest = { onDismissText() }) {
         androidx.compose.material3.Surface(
             shape = androidx.compose.material3.MaterialTheme.shapes.extraLarge,
-            color = Color.White,
+            color = colors.surface,
             modifier = Modifier.padding(16.dp)
         ) {
             Column(
@@ -155,13 +158,13 @@ fun ComplaintDialog(
                 Text(
                     text = "确定要举报Ta么",
                     fontSize = 20.sp,
-                    color = Color.Black
+                    color = colors.onSurface
                     // 默认就是左对齐，不需要额外设置 textAlign
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = "${user.userId}\n${user.userName}",
-                    color = Color.DarkGray
+                    color = colors.muted
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -175,7 +178,8 @@ fun ComplaintDialog(
                         modifier = Modifier.fillMaxWidth(),
                         onClick = { onConfirm() },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFE53935)
+                            containerColor = colors.danger,
+                            contentColor = Color.White
                         )
                     ) {
                         Text("确定，它是虚空战神😄", color = Color.White)
@@ -186,10 +190,11 @@ fun ComplaintDialog(
                         modifier = Modifier.fillMaxWidth(),
                         onClick = { onDismissText() },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFEEEEEE)
+                            containerColor = colors.surfaceVariant,
+                            contentColor = colors.onSurface
                         )
                     ) {
-                        Text("取消,Ta正在上班🫡", color = Color.Black)
+                        Text("取消,Ta正在上班🫡", color = colors.onSurface)
                     }
                 }
             }
@@ -202,10 +207,11 @@ fun SignOutDialog(
     onDismissText: () -> Unit,
     onConfirm: () -> Unit
 ) {
+    val colors = KxTheme.colors
     Dialog(onDismissRequest = { onDismissText() }) {
         androidx.compose.material3.Surface(
             shape = androidx.compose.material3.MaterialTheme.shapes.extraLarge,
-            color = Color.White,
+            color = colors.surface,
             modifier = Modifier.padding(16.dp)
         ) {
             Column(
@@ -217,12 +223,12 @@ fun SignOutDialog(
                 Text(
                     text = "你们商量好了吗？确定要帮Ta签退么？未经允许给别人签退的人死全家😄",
                     fontSize = 20.sp,
-                    color = Color.Black
+                    color = colors.onSurface
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = "${user.userId}\n${user.userName}",
-                    color = Color.DarkGray
+                    color = colors.muted
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -247,10 +253,11 @@ fun SignOutDialog(
                         modifier = Modifier.fillMaxWidth(),
                         onClick = { onDismissText() },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFEEEEEE)
+                            containerColor = colors.surfaceVariant,
+                            contentColor = colors.onSurface
                         )
                     ) {
-                        Text("哈哈，我手滑了😄", color = Color.Black)
+                        Text("哈哈，我手滑了😄", color = colors.onSurface)
                     }
                 }
             }

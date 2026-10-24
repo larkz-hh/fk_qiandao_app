@@ -24,16 +24,13 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import io.github.yesterdaylz.kxqiandao.ui.theme.Blue1
-import io.github.yesterdaylz.kxqiandao.ui.theme.DividerGray
-import io.github.yesterdaylz.kxqiandao.ui.theme.GrayOffline
+import io.github.yesterdaylz.kxqiandao.ui.theme.KxTheme
 
 /**
  * 内嵌网页页（知识库 / 校园跑等）
@@ -70,8 +67,8 @@ fun WebPageScreen(
             if (uiState.loading) {
                 LinearProgressIndicator(
                     progress = { uiState.progress / 100f },
-                    color = Blue1,              // 品牌蓝，不用主题默认的紫
-                    trackColor = DividerGray,
+                    color = KxTheme.colors.primary,     // 品牌色
+                    trackColor = KxTheme.colors.divider,
                     modifier = Modifier
                         .fillMaxWidth()
                         .align(Alignment.TopCenter)
@@ -117,6 +114,7 @@ private fun WebPageErrorView(
     onRetry: () -> Unit,
     onOpenInBrowser: () -> Unit
 ) {
+    val colors = KxTheme.colors
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -128,7 +126,7 @@ private fun WebPageErrorView(
                 imageVector = Icons.Default.CloudOff,
                 contentDescription = null,
                 modifier = Modifier.size(56.dp),
-                tint = GrayOffline
+                tint = colors.muted
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text("$title 加载失败", fontSize = 17.sp, fontWeight = FontWeight.Medium)
@@ -136,20 +134,20 @@ private fun WebPageErrorView(
             Text(
                 text = message,
                 fontSize = 13.sp,
-                color = GrayOffline,
+                color = colors.muted,
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(16.dp))
             Button(
                 onClick = onRetry,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Blue1,
-                    contentColor = Color.White
+                    containerColor = colors.primary,
+                    contentColor = colors.onPrimary
                 )
             ) { Text("重新加载") }
             TextButton(
                 onClick = onOpenInBrowser,
-                colors = ButtonDefaults.textButtonColors(contentColor = Blue1)
+                colors = ButtonDefaults.textButtonColors(contentColor = colors.primary)
             ) { Text("用浏览器打开") }
         }
     }

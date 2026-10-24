@@ -46,7 +46,7 @@ import io.github.yesterdaylz.kxqiandao.ui.component.AppLogo
 import io.github.yesterdaylz.kxqiandao.ui.navigation.AppDestination
 import io.github.yesterdaylz.kxqiandao.ui.navigation.LocalTabNavigator
 import io.github.yesterdaylz.kxqiandao.ui.navigation.rememberTabNavState
-import io.github.yesterdaylz.kxqiandao.ui.theme.BackgroundGray
+import io.github.yesterdaylz.kxqiandao.ui.theme.KxTheme
 import io.github.yesterdaylz.kxqiandao.util.Constants
 import io.github.yesterdaylz.kxqiandao.util.PermissionUtil
 import io.github.yesterdaylz.kxqiandao.util.UrlRouter
@@ -116,7 +116,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
     }
 
     Scaffold(
-        containerColor = BackgroundGray,
+        containerColor = KxTheme.colors.background,
         topBar = {
             if (showBars) {
                 MainTopBar(

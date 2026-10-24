@@ -16,13 +16,12 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.yesterdaylz.kxqiandao.data.model.TopFiveItem
 import io.github.yesterdaylz.kxqiandao.ui.component.RankingItem
-import io.github.yesterdaylz.kxqiandao.ui.theme.DividerGray
+import io.github.yesterdaylz.kxqiandao.ui.theme.KxTheme
 import kotlin.collections.lastIndex
 
 /**
@@ -48,7 +47,7 @@ fun RankingTab(padding: PaddingValues, topFiveList: List<TopFiveItem>) {
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(8.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White)
+            colors = CardDefaults.cardColors(containerColor = KxTheme.colors.surface)
         ) {
             LazyColumn(
                 modifier = Modifier.padding(8.dp)
@@ -56,7 +55,7 @@ fun RankingTab(padding: PaddingValues, topFiveList: List<TopFiveItem>) {
                 itemsIndexed(topFiveList) { index, item ->
                     RankingItem(rank = index + 1, item = item)
                     if (index < topFiveList.lastIndex) {
-                        HorizontalDivider(color = DividerGray, thickness = 1.dp)
+                        HorizontalDivider(color = KxTheme.colors.divider, thickness = 1.dp)
                     }
                 }
             }
