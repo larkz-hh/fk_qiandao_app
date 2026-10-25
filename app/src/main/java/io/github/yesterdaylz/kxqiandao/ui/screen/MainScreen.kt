@@ -207,6 +207,14 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                             onBack = { navState.navigator.goBack() }
                         )
                     }
+                    entry<AppDestination.Settings> {
+                        SettingsScreen(
+                            padding = padding,
+                            themeMode = uiState.themeMode,
+                            onThemeModeChange = viewModel::setThemeMode,
+                            onBack = { navState.navigator.goBack() }
+                        )
+                    }
                 }
             )
         }

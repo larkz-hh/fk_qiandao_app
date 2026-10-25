@@ -23,6 +23,7 @@ import io.github.yesterdaylz.kxqiandao.util.Constants
 import io.github.yesterdaylz.kxqiandao.util.CheckInHeatmap
 import io.github.yesterdaylz.kxqiandao.util.HeatmapBuilder
 import io.github.yesterdaylz.kxqiandao.util.NetworkUtil
+import io.github.yesterdaylz.kxqiandao.ui.theme.ThemeMode
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -73,6 +74,7 @@ data class MainUiState(
     val recordsStale: Boolean = false,// 列表来自本地缓存、没刷新成功
     val totalSignDays: Int = 0,// 累计签到天数
     val totalSignMinutes: Int = 0,// 累计签到分钟数
+    val themeMode: ThemeMode = ThemeMode.System,// 主题模式
     val searchText: String = "",
     val topFiveList: List<TopFiveItem> = emptyList(),
 ) {
@@ -141,6 +143,18 @@ class MainViewModel : ViewModel() {
         }
 
         runCatching { connectivityManager?.registerDefaultNetworkCallback(networkCallback) }
+
+        // 主题设置变化时同步到 UI 状态
+        viewModelScope.launch {
+            repo.themeMode.collect { key ->
+                _uiState.update { it.copy(themeMode = ThemeMode.fromKey(key)) }
+            }
+        }
+    }
+
+    /** 修改主题模式，存到 DataStore */
+    fun setThemeMode(mode: ThemeMode) {
+        viewModelScope.launch { repo.saveThemeMode(mode.key) }
     }
 
     override fun onCleared() {

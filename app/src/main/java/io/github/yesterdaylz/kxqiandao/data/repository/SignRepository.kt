@@ -15,6 +15,7 @@ import io.github.yesterdaylz.kxqiandao.data.remote.ApiException
 import io.github.yesterdaylz.kxqiandao.data.remote.ApiService
 import io.github.yesterdaylz.kxqiandao.data.remote.RetrofitClient
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import retrofit2.Response
 
@@ -32,6 +33,14 @@ class SignRepository(
     }
 
     // 本地会话
+
+    /** 主题模式设置 */
+    val themeMode: Flow<String> = prefs.themeMode
+
+    /** 保存主题模式 */
+    suspend fun saveThemeMode(value: String) {
+        prefs.saveThemeMode(value)
+    }
 
     /** 读取本地存的学号 */
     suspend fun savedUid(): String = prefs.uid.first()

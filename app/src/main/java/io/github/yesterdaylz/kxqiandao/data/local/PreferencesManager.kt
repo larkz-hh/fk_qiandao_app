@@ -22,6 +22,7 @@ class PreferencesManager(private val context: Context) {
         private val KEY_TOTAL_TIME = stringPreferencesKey("totalTime")
         private val KEY_HEATMAP = stringPreferencesKey("heatmap_cache")
         private val KEY_RECORDS = stringPreferencesKey("records_cache")
+        private val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
     }
 
     val uid: Flow<String> = context.dataStore.data.map { it[KEY_UID] ?: "null" }
@@ -33,6 +34,7 @@ class PreferencesManager(private val context: Context) {
     val totalTime: Flow<String> = context.dataStore.data.map { it[KEY_TOTAL_TIME] ?: "null" }
     val heatmapCache: Flow<String> = context.dataStore.data.map { it[KEY_HEATMAP] ?: "" }
     val recordsCache: Flow<String> = context.dataStore.data.map { it[KEY_RECORDS] ?: "" }
+    val themeMode: Flow<String> = context.dataStore.data.map { it[KEY_THEME_MODE] ?: "system" }
 
     suspend fun saveUid(value: String) {
         context.dataStore.edit { it[KEY_UID] = value }
@@ -61,5 +63,9 @@ class PreferencesManager(private val context: Context) {
 
     suspend fun saveRecordsCache(value: String) {
         context.dataStore.edit { it[KEY_RECORDS] = value }
+    }
+
+    suspend fun saveThemeMode(value: String) {
+        context.dataStore.edit { it[KEY_THEME_MODE] = value }
     }
 }

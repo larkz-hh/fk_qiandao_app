@@ -35,4 +35,8 @@ sealed interface AppDestination : NavKey, java.io.Serializable {
     /** 签到记录列表 */
     @Serializable
     data object Records : AppDestination
+
+    /** 设置 */
+    @Serializable
+    data object Settings : AppDestination
 }

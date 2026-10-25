@@ -84,16 +84,21 @@ fun MineTab(
         )
 
         Spacer(modifier = Modifier.height(6.dp))
-        RecordsEntry(onClick = { navigator.navigateTo(AppDestination.Records) })
+        MineEntryRow(label = "查看全部签到记录") {
+            navigator.navigateTo(AppDestination.Records)
+        }
+        MineEntryRow(label = "设置") {
+            navigator.navigateTo(AppDestination.Settings)
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
         Text(text = "更多功能施工中，敬请期待", fontSize = 13.sp, color = colors.muted)
     }
 }
 
-/** 进入完整签到记录 */
+/** 我的页里的入口行 */
 @Composable
-private fun RecordsEntry(onClick: () -> Unit) {
+private fun MineEntryRow(label: String, onClick: () -> Unit) {
     val colors = KxTheme.colors
     Row(
         modifier = Modifier
@@ -102,7 +107,7 @@ private fun RecordsEntry(onClick: () -> Unit) {
             .padding(horizontal = 4.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = "查看全部签到记录", fontSize = 14.sp, color = colors.primary)
+        Text(text = label, fontSize = 14.sp, color = colors.primary)
         Spacer(modifier = Modifier.weight(1f))
         Icon(
             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
