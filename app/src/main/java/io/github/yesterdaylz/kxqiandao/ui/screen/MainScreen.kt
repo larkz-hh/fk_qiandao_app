@@ -212,6 +212,13 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                             padding = padding,
                             themeMode = uiState.themeMode,
                             onThemeModeChange = viewModel::setThemeMode,
+                            onOpenAbout = { navState.navigator.navigateTo(AppDestination.About) },
+                            onBack = { navState.navigator.goBack() }
+                        )
+                    }
+                    entry<AppDestination.About> {
+                        AboutScreen(
+                            padding = padding,
                             onBack = { navState.navigator.goBack() }
                         )
                     }

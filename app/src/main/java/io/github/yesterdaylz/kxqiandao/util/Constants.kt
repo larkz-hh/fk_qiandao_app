@@ -2,6 +2,7 @@ package io.github.yesterdaylz.kxqiandao.util
 
 object Constants {
     const val BASE_URL = "https://at.kexie.space"
+    const val REPO_URL = "https://github.com/larkz-hh/fk_qiandao_app"
     const val KNOWLEDGE_BASE_URL = "https://ccn80b5bgw86.feishu.cn/wiki/CKD8wrIVyi1E9VkdUVGclVFxnlb"
     const val CAMPUS_RUN_URL = "http://10.60.58.102:81/"
     /// 科协网网段

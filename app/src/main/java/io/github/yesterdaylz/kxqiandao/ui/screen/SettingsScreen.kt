@@ -9,9 +9,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -22,11 +24,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import io.github.yesterdaylz.kxqiandao.ui.theme.KxTheme
 import io.github.yesterdaylz.kxqiandao.ui.theme.ThemeMode
+import io.github.yesterdaylz.kxqiandao.util.Constants
+import io.github.yesterdaylz.kxqiandao.util.UrlRouter
 
 /**
  * 设置页
@@ -36,9 +42,11 @@ fun SettingsScreen(
     padding: PaddingValues,
     themeMode: ThemeMode,
     onThemeModeChange: (ThemeMode) -> Unit,
+    onOpenAbout: () -> Unit,
     onBack: () -> Unit
 ) {
     val colors = KxTheme.colors
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -90,7 +98,45 @@ fun SettingsScreen(
                     )
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(text = "其他", fontSize = 13.sp, color = colors.muted)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = colors.surface)
+            ) {
+                SettingsRow(
+                    label = "网页版",
+                    onClick = { UrlRouter.openExternally(context, Constants.BASE_URL.toUri()) }
+                )
+                HorizontalDivider(color = colors.divider, thickness = 1.dp)
+                SettingsRow(label = "关于", onClick = onOpenAbout)
+            }
         }
+    }
+}
+
+/** 设置里的一行 */
+@Composable
+private fun SettingsRow(label: String, onClick: () -> Unit) {
+    val colors = KxTheme.colors
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = label, fontSize = 15.sp, modifier = Modifier.weight(1f))
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = colors.muted,
+            modifier = Modifier.size(18.dp)
+        )
     }
 }
 
