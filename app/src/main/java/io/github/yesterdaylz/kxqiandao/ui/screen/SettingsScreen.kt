@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -121,16 +122,30 @@ fun SettingsScreen(
 
 /** 设置里的一行 */
 @Composable
-private fun SettingsRow(label: String, onClick: () -> Unit) {
+private fun SettingsRow(
+    label: String,
+    value: String? = null,
+    enabled: Boolean = true,
+    onClick: () -> Unit
+) {
     val colors = KxTheme.colors
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = label, fontSize = 15.sp, modifier = Modifier.weight(1f))
+        Text(
+            text = label,
+            fontSize = 15.sp,
+            color = if (enabled) colors.onSurface else colors.muted,
+            modifier = Modifier.weight(1f)
+        )
+        if (value != null) {
+            Text(text = value, fontSize = 12.sp, color = colors.muted)
+            Spacer(modifier = Modifier.width(4.dp))
+        }
         Icon(
             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = null,

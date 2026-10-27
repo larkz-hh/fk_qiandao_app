@@ -17,6 +17,7 @@ import io.github.yesterdaylz.kxqiandao.data.model.RecordItem
 import io.github.yesterdaylz.kxqiandao.data.model.TopFiveItem
 import io.github.yesterdaylz.kxqiandao.data.repository.SignRepository
 import io.github.yesterdaylz.kxqiandao.data.remote.ApiException
+import io.github.yesterdaylz.kxqiandao.data.remote.GitHubClient
 import io.github.yesterdaylz.kxqiandao.receiver.SignOutReceiver
 import io.github.yesterdaylz.kxqiandao.service.AutoService
 import io.github.yesterdaylz.kxqiandao.util.Constants
@@ -42,6 +43,13 @@ import kotlin.collections.filter
 import kotlin.time.Duration.Companion.milliseconds
 
 private const val TIME_NULL = "本次签到开始时间: null"
+
+/** 发现的新版本 */
+data class UpdateInfo(
+    val version: String,
+    val url: String,// release 页面
+    val apkUrl: String?,// release 里挂的 apk，没有就是 null
+)
 
 private const val REFRESH_THROTTLE_MS = 1500L
 
@@ -75,6 +83,8 @@ data class MainUiState(
     val totalSignDays: Int = 0,// 累计签到天数
     val totalSignMinutes: Int = 0,// 累计签到分钟数
     val themeMode: ThemeMode = ThemeMode.System,// 主题模式
+    val updateChecking: Boolean = false,// 正在检查更新
+    val updateInfo: UpdateInfo? = null,// 发现的新版本
     val searchText: String = "",
     val topFiveList: List<TopFiveItem> = emptyList(),
 ) {
@@ -681,6 +691,65 @@ class MainViewModel : ViewModel() {
         val intent = Intent(KexieApplication.instance, AutoService::class.java)
         ContextCompat.startForegroundService(KexieApplication.instance, intent)
     }
+
+    /** 检查 GitHub 最新 release，比当前版本新提示 */
+    fun checkUpdate() {
+        if (_uiState.value.updateChecking) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(updateChecking = true) }
+            val result = GitHubClient.latestRelease(Constants.REPO_SLUG)
+            _uiState.update { it.copy(updateChecking = false) }
+            result
+                .onSuccess { release ->
+                    val url = release.htmlUrl.orEmpty()
+                    val tag = release.tagName?.takeIf { it.isNotBlank() }
+                    if (url.isBlank() || tag == null) {
+                        _toastMessage.emit("检查更新失败")
+                        return@onSuccess
+                    }
+                    if (compareVersion(tag, currentVersionName()) > 0) {
+                        val apkUrl = release.assets
+                            ?.firstOrNull { it.name?.endsWith(".apk", ignoreCase = true) == true }
+                            ?.browserDownloadUrl
+                        _uiState.update {
+                            it.copy(updateInfo = UpdateInfo(tag, url, apkUrl))
+                        }
+                    } else {
+                        _toastMessage.emit("已是最新版本")
+                    }
+                }
+                .onFailure { _toastMessage.emit("检查更新失败") }
+        }
+    }
+
+    /** 关掉更新提示 */
+    fun dismissUpdate() {
+        _uiState.update { it.copy(updateInfo = null) }
+    }
+
+    private fun currentVersionName(): String = runCatching {
+        @Suppress("DEPRECATION")
+        KexieApplication.instance.packageManager
+            .getPackageInfo(KexieApplication.instance.packageName, 0).versionName
+    }.getOrNull().orEmpty()
+
+    /** 比较版本 */
+    private fun compareVersion(a: String, b: String): Int {
+        val left = versionParts(a)
+        val right = versionParts(b)
+        for (i in 0 until maxOf(left.size, right.size)) {
+            val diff = left.getOrElse(i) { 0 } - right.getOrElse(i) { 0 }
+            if (diff != 0) return diff
+        }
+        return 0
+    }
+
+    private fun versionParts(version: String): List<Int> =
+        version.trim()
+            .removePrefix("v")
+            .removePrefix("V")
+            .split('.', '-', '+', '_')
+            .map { part -> part.takeWhile { it.isDigit() }.toIntOrNull() ?: 0 }
 
     fun stopAutoService() {
         val intent = Intent(KexieApplication.instance, AutoService::class.java)

@@ -221,7 +221,7 @@ fun SignOutDialog(
                 horizontalAlignment = Alignment.Start
             ) {
                 Text(
-                    text = "你们商量好了吗？确定要帮Ta签退么？未经允许给别人签退的人死全家😄",
+                    text = "你们商量好了吗？确定要帮Ta签退么？最好不要未经同意就帮别人签退😄",
                     fontSize = 20.sp,
                     color = colors.onSurface
                 )

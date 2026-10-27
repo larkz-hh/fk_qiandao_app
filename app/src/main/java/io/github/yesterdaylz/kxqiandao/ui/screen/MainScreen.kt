@@ -219,6 +219,10 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                     entry<AppDestination.About> {
                         AboutScreen(
                             padding = padding,
+                            updateChecking = uiState.updateChecking,
+                            updateInfo = uiState.updateInfo,
+                            onCheckUpdate = viewModel::checkUpdate,
+                            onDismissUpdate = viewModel::dismissUpdate,
                             onBack = { navState.navigator.goBack() }
                         )
                     }

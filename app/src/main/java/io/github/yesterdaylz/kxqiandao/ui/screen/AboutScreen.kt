@@ -12,15 +12,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -33,11 +38,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.core.net.toUri
 import io.github.yesterdaylz.kxqiandao.R
 import io.github.yesterdaylz.kxqiandao.ui.theme.KxTheme
+import io.github.yesterdaylz.kxqiandao.util.ApkUpdateManager
 import io.github.yesterdaylz.kxqiandao.util.Constants
 import io.github.yesterdaylz.kxqiandao.util.UrlRouter
+import io.github.yesterdaylz.kxqiandao.viewmodel.UpdateInfo
 
 /**
  * 关于页
@@ -45,6 +53,10 @@ import io.github.yesterdaylz.kxqiandao.util.UrlRouter
 @Composable
 fun AboutScreen(
     padding: PaddingValues,
+    updateChecking: Boolean,
+    updateInfo: UpdateInfo?,
+    onCheckUpdate: () -> Unit,
+    onDismissUpdate: () -> Unit,
     onBack: () -> Unit
 ) {
     val colors = KxTheme.colors
@@ -105,24 +117,122 @@ fun AboutScreen(
             colors = CardDefaults.cardColors(containerColor = colors.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        UrlRouter.openExternally(context, Constants.REPO_URL.toUri())
-                    }
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically
+            AboutRow(
+                label = "GitHub 仓库",
+                onClick = { UrlRouter.openExternally(context, Constants.REPO_URL.toUri()) }
+            )
+        }
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = colors.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            AboutRow(
+                label = "检查更新",
+                value = if (updateChecking) "检查中…" else null,
+                enabled = !updateChecking,
+                onClick = onCheckUpdate
+            )
+        }
+    }
+
+    updateInfo?.let { info ->
+        Dialog(onDismissRequest = onDismissUpdate) {
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = colors.surface
             ) {
-                Text(text = "GitHub 仓库", fontSize = 15.sp, modifier = Modifier.weight(1f))
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = null,
-                    tint = colors.muted,
-                    modifier = Modifier.size(18.dp)
-                )
+                Column(modifier = Modifier.padding(24.dp)) {
+                    Text(
+                        text = "发现新版本",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = colors.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "GitHub 上发布了 ${info.version}",
+                        fontSize = 13.sp,
+                        color = colors.muted
+                    )
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    if (info.apkUrl != null) {
+                        Button(
+                            onClick = {
+                                ApkUpdateManager.start(context, info.apkUrl, info.version)
+                                onDismissUpdate()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = colors.primary,
+                                contentColor = colors.onPrimary
+                            )
+                        ) { Text("应用内下载更新") }
+                        Spacer(modifier = Modifier.height(10.dp))
+                    }
+
+                    Button(
+                        onClick = {
+                            UrlRouter.openExternally(context, info.url.toUri())
+                            onDismissUpdate()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = colors.surfaceVariant,
+                            contentColor = colors.onSurface
+                        )
+                    ) { Text("去 Release 页面") }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+                    TextButton(
+                        onClick = onDismissUpdate,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(text = "稍后", color = colors.muted)
+                    }
+                }
             }
         }
+    }
+}
+
+/** 关于页里的一行 */
+@Composable
+private fun AboutRow(
+    label: String,
+    value: String? = null,
+    enabled: Boolean = true,
+    onClick: () -> Unit
+) {
+    val colors = KxTheme.colors
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            fontSize = 15.sp,
+            color = if (enabled) colors.onSurface else colors.muted,
+            modifier = Modifier.weight(1f)
+        )
+        if (value != null) {
+            Text(text = value, fontSize = 12.sp, color = colors.muted)
+            Spacer(modifier = Modifier.width(4.dp))
+        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = colors.muted,
+            modifier = Modifier.size(18.dp)
+        )
     }
 }
 
