@@ -23,6 +23,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -34,6 +35,9 @@ import io.github.yesterdaylz.kxqiandao.ui.theme.KxTheme
 import io.github.yesterdaylz.kxqiandao.ui.theme.ThemeMode
 import io.github.yesterdaylz.kxqiandao.util.Constants
 import io.github.yesterdaylz.kxqiandao.util.UrlRouter
+import io.github.yesterdaylz.kxqiandao.viewmodel.MainUiState
+import io.github.yesterdaylz.kxqiandao.viewmodel.MainViewModel
+import java.util.Locale
 
 /**
  * 设置页
@@ -41,13 +45,15 @@ import io.github.yesterdaylz.kxqiandao.util.UrlRouter
 @Composable
 fun SettingsScreen(
     padding: PaddingValues,
-    themeMode: ThemeMode,
-    onThemeModeChange: (ThemeMode) -> Unit,
+    uiState: MainUiState,
+    viewModel: MainViewModel,
     onOpenAbout: () -> Unit,
     onBack: () -> Unit
 ) {
     val colors = KxTheme.colors
     val context = LocalContext.current
+
+    LaunchedEffect(Unit) { viewModel.refreshCacheSize() }
 
     Column(
         modifier = Modifier
@@ -82,20 +88,20 @@ fun SettingsScreen(
                 Column {
                     ThemeOption(
                         label = "跟随系统",
-                        selected = themeMode == ThemeMode.System,
-                        onClick = { onThemeModeChange(ThemeMode.System) }
+                        selected = uiState.themeMode == ThemeMode.System,
+                        onClick = { viewModel.setThemeMode(ThemeMode.System) }
                     )
                     HorizontalDivider(color = colors.divider, thickness = 1.dp)
                     ThemeOption(
                         label = "浅色",
-                        selected = themeMode == ThemeMode.Light,
-                        onClick = { onThemeModeChange(ThemeMode.Light) }
+                        selected = uiState.themeMode == ThemeMode.Light,
+                        onClick = { viewModel.setThemeMode(ThemeMode.Light) }
                     )
                     HorizontalDivider(color = colors.divider, thickness = 1.dp)
                     ThemeOption(
                         label = "深色",
-                        selected = themeMode == ThemeMode.Dark,
-                        onClick = { onThemeModeChange(ThemeMode.Dark) }
+                        selected = uiState.themeMode == ThemeMode.Dark,
+                        onClick = { viewModel.setThemeMode(ThemeMode.Dark) }
                     )
                 }
             }
@@ -109,6 +115,12 @@ fun SettingsScreen(
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(containerColor = colors.surface)
             ) {
+                SettingsRow(
+                    label = "清理缓存",
+                    value = formatSize(uiState.cacheSizeBytes),
+                    onClick = viewModel::clearCaches
+                )
+                HorizontalDivider(color = colors.divider, thickness = 1.dp)
                 SettingsRow(
                     label = "网页版",
                     onClick = { UrlRouter.openExternally(context, Constants.BASE_URL.toUri()) }
@@ -167,4 +179,11 @@ private fun ThemeOption(label: String, selected: Boolean, onClick: () -> Unit) {
         Text(text = label, fontSize = 15.sp, modifier = Modifier.weight(1f))
         RadioButton(selected = selected, onClick = onClick)
     }
+}
+
+private fun formatSize(bytes: Long): String = when {
+    bytes <= 0 -> "0 B"
+    bytes < 1024 -> "$bytes B"
+    bytes < 1024 * 1024 -> String.format(Locale.getDefault(), "%.1f KB", bytes / 1024f)
+    else -> String.format(Locale.getDefault(), "%.1f MB", bytes / (1024f * 1024f))
 }

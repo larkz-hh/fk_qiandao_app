@@ -85,6 +85,13 @@ class SignRepository(
 
     // 热力图缓存
 
+    /** 热力图 + 签到记录缓存占的字节数 */
+    suspend fun cacheSizeBytes(): Long {
+        val heatmap = prefs.heatmapCache.first().toByteArray().size
+        val records = prefs.recordsCache.first().toByteArray().size
+        return (heatmap + records).toLong()
+    }
+
     /** 读热力图缓存 */
     suspend fun heatmapCache(): HeatmapCache? {
         val raw = prefs.heatmapCache.first()

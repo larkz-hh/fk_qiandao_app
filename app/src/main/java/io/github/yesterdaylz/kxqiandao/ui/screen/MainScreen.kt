@@ -210,8 +210,8 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                     entry<AppDestination.Settings> {
                         SettingsScreen(
                             padding = padding,
-                            themeMode = uiState.themeMode,
-                            onThemeModeChange = viewModel::setThemeMode,
+                            uiState = uiState,
+                            viewModel = viewModel,
                             onOpenAbout = { navState.navigator.navigateTo(AppDestination.About) },
                             onBack = { navState.navigator.goBack() }
                         )

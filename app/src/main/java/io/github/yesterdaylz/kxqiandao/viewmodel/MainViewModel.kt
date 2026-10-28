@@ -80,6 +80,7 @@ data class MainUiState(
     val records: List<RecordItem> = emptyList(),// 全部签到记录
     val recordsLoading: Boolean = false,
     val recordsStale: Boolean = false,// 列表来自本地缓存、没刷新成功
+    val cacheSizeBytes: Long = 0,// 本地缓存占用
     val totalSignDays: Int = 0,// 累计签到天数
     val totalSignMinutes: Int = 0,// 累计签到分钟数
     val themeMode: ThemeMode = ThemeMode.System,// 主题模式
@@ -170,6 +171,35 @@ class MainViewModel : ViewModel() {
     override fun onCleared() {
         runCatching { connectivityManager?.unregisterNetworkCallback(networkCallback) }
         super.onCleared()
+    }
+
+    /** 重新计算本地缓存占用 */
+    fun refreshCacheSize() {
+        viewModelScope.launch {
+            val size = repo.cacheSizeBytes()
+            _uiState.update { it.copy(cacheSizeBytes = size) }
+        }
+    }
+
+    /** 清空热力图和签到记录缓存 */
+    fun clearCaches() {
+        viewModelScope.launch {
+            repo.clearHeatmapCache()
+            repo.clearRecordsCache()
+            heatmapDays = null
+            recordItems = null
+            _uiState.update {
+                it.copy(
+                    heatmap = null,
+                    heatmapOffset = 0,
+                    heatmapMinOffset = 0,
+                    records = emptyList(),
+                    recordsStale = false,
+                    cacheSizeBytes = 0,
+                )
+            }
+            _toastMessage.emit("缓存已清理")
+        }
     }
 
     /** 重新判断网络环境 */
