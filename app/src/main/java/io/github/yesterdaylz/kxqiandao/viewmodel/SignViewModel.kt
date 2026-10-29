@@ -13,56 +13,36 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.yesterdaylz.kxqiandao.KexieApplication
 import io.github.yesterdaylz.kxqiandao.data.model.ApiResponse
-import io.github.yesterdaylz.kxqiandao.data.model.RecordItem
-import io.github.yesterdaylz.kxqiandao.data.model.TopFiveItem
-import io.github.yesterdaylz.kxqiandao.data.repository.SignRepository
 import io.github.yesterdaylz.kxqiandao.data.remote.ApiException
-import io.github.yesterdaylz.kxqiandao.data.remote.GitHubClient
+import io.github.yesterdaylz.kxqiandao.data.repository.SignRepository
 import io.github.yesterdaylz.kxqiandao.receiver.SignOutReceiver
 import io.github.yesterdaylz.kxqiandao.service.AutoService
+import io.github.yesterdaylz.kxqiandao.util.CacheEventBus
 import io.github.yesterdaylz.kxqiandao.util.Constants
-import io.github.yesterdaylz.kxqiandao.util.CheckInHeatmap
-import io.github.yesterdaylz.kxqiandao.util.HeatmapBuilder
 import io.github.yesterdaylz.kxqiandao.util.NetworkUtil
-import io.github.yesterdaylz.kxqiandao.ui.theme.ThemeMode
+import io.github.yesterdaylz.kxqiandao.util.ToastBus
+import io.github.yesterdaylz.kxqiandao.util.errorText
+import io.github.yesterdaylz.kxqiandao.util.userMessage
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.Job
 import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 import kotlin.collections.filter
 import kotlin.time.Duration.Companion.milliseconds
 
 private const val TIME_NULL = "本次签到开始时间: null"
 
-/** 发现的新版本 */
-data class UpdateInfo(
-    val version: String,
-    val url: String,// release 页面
-    val apkUrl: String?,// release 里挂的 apk，没有就是 null
-)
-
 private const val REFRESH_THROTTLE_MS = 1500L
 
-/** 热力图一屏显示多少个月 */
-private const val HEATMAP_MONTHS = 6
-
-/** 翻页兜底上限，防止死循环 */
-private const val MAX_HEATMAP_OFFSET = 40
-
-/** 热力图缓存的保鲜期 */
-private const val CACHE_TTL_MS = 6 * 60 * 60 * 1000L
-
-data class MainUiState(
+data class SignUiState(
     val uid: String = "",
     val selfUid: String = "",// 本地登录的人
     val uname: String = "",
@@ -73,21 +53,7 @@ data class MainUiState(
     val statusKnown: Boolean = true,// 服务器状态是否已确认
     val netState: NetworkUtil.NetState = NetworkUtil.NetState.Campus,// 当前网络环境
     val onlineUsers: List<ApiResponse.MemberData> = emptyList(),
-    val heatmap: CheckInHeatmap? = null,// 近半年签到热力图
-    val heatmapOffset: Int = 0,// 0 = 最近半年，-1 = 再往前半年
-    val heatmapMinOffset: Int = 0,// 最早能翻到哪半年
-    val heatmapLoading: Boolean = false,
-    val records: List<RecordItem> = emptyList(),// 全部签到记录
-    val recordsLoading: Boolean = false,
-    val recordsStale: Boolean = false,// 列表来自本地缓存、没刷新成功
-    val cacheSizeBytes: Long = 0,// 本地缓存占用
-    val totalSignDays: Int = 0,// 累计签到天数
-    val totalSignMinutes: Int = 0,// 累计签到分钟数
-    val themeMode: ThemeMode = ThemeMode.System,// 主题模式
-    val updateChecking: Boolean = false,// 正在检查更新
-    val updateInfo: UpdateInfo? = null,// 发现的新版本
     val searchText: String = "",
-    val topFiveList: List<TopFiveItem> = emptyList(),
 ) {
     val filteredUsers: List<ApiResponse.MemberData> =
         if (searchText.isBlank()) {
@@ -102,28 +68,18 @@ data class MainUiState(
         }
 }
 
-class MainViewModel : ViewModel() {
+class SignViewModel : ViewModel() {
 
     private val repo = SignRepository()
 
-    private val _uiState = MutableStateFlow(MainUiState())
-    val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
-
-    private val _toastMessage = MutableSharedFlow<String>()
-    val toastMessage: SharedFlow<String> = _toastMessage.asSharedFlow()
+    private val _uiState = MutableStateFlow(SignUiState())
+    val uiState: StateFlow<SignUiState> = _uiState.asStateFlow()
 
     private var scheduledSignOutJob: Job? = null
 
-    /** 用户改过学号输入框后，刷新时不要把它覆盖掉 */
     private var uidDirty = false
 
     private var lastRefreshAt = 0L
-
-    /** 热力图每天的分钟数，翻半年时复用 */
-    private var heatmapDays: Map<String, Int>? = null
-
-    /** 原始签到记录，热力图和记录列表共用一次请求 */
-    private var recordItems: List<RecordItem>? = null
 
     private val connectivityManager =
         KexieApplication.instance.getSystemService(ConnectivityManager::class.java)
@@ -154,18 +110,6 @@ class MainViewModel : ViewModel() {
         }
 
         runCatching { connectivityManager?.registerDefaultNetworkCallback(networkCallback) }
-
-        // 主题设置变化时同步到 UI 状态
-        viewModelScope.launch {
-            repo.themeMode.collect { key ->
-                _uiState.update { it.copy(themeMode = ThemeMode.fromKey(key)) }
-            }
-        }
-    }
-
-    /** 修改主题模式，存到 DataStore */
-    fun setThemeMode(mode: ThemeMode) {
-        viewModelScope.launch { repo.saveThemeMode(mode.key) }
     }
 
     override fun onCleared() {
@@ -173,48 +117,16 @@ class MainViewModel : ViewModel() {
         super.onCleared()
     }
 
-    /** 重新计算本地缓存占用 */
-    fun refreshCacheSize() {
-        viewModelScope.launch {
-            val size = repo.cacheSizeBytes()
-            _uiState.update { it.copy(cacheSizeBytes = size) }
-        }
-    }
-
-    /** 清空热力图和签到记录缓存 */
-    fun clearCaches() {
-        viewModelScope.launch {
-            repo.clearHeatmapCache()
-            repo.clearRecordsCache()
-            heatmapDays = null
-            recordItems = null
-            _uiState.update {
-                it.copy(
-                    heatmap = null,
-                    heatmapOffset = 0,
-                    heatmapMinOffset = 0,
-                    records = emptyList(),
-                    recordsStale = false,
-                    cacheSizeBytes = 0,
-                )
-            }
-            _toastMessage.emit("缓存已清理")
-        }
-    }
-
-    /** 重新判断网络环境 */
     fun refreshNetState() {
         val state = NetworkUtil.currentState(KexieApplication.instance)
         _uiState.update { it.copy(netState = state) }
     }
 
-    /** 手动刷新：重判网络再拉一次状态 */
     fun refreshStatus() {
         refreshNetState()
         checkOnlineStatus()
     }
 
-    /** 换网后状态大概率变了，等系统切完再刷 */
     private fun onNetworkChanged() {
         viewModelScope.launch {
             delay(500.milliseconds)
@@ -225,7 +137,6 @@ class MainViewModel : ViewModel() {
 
     /** 检查登录和签到状态 */
     fun checkOnlineStatus(silent: Boolean = false) {
-        // 回前台和网络回调可能连着触发，短时间内只查一次
         val now = System.currentTimeMillis()
         if (silent && now - lastRefreshAt < REFRESH_THROTTLE_MS) return
         lastRefreshAt = now
@@ -251,7 +162,7 @@ class MainViewModel : ViewModel() {
                 }
                 fetchOnlineStatus(savedUid, silent)
             }
-            if (!silent) _toastMessage.emit(Constants.INIT_ONLINE_OK)
+            if (!silent) ToastBus.send(Constants.INIT_ONLINE_OK)
         }
     }
 
@@ -266,13 +177,11 @@ class MainViewModel : ViewModel() {
         if (data == null) {
             val error = result.exceptionOrNull()
             if (error is ApiException) {
-                // 服务端有回应，说明网络是通的
-                if (!silent) _toastMessage.emit(error.userMessage("查询失败"))
+                if (!silent) ToastBus.send(error.userMessage("查询失败"))
             } else {
-                // 查不到标注未确认
                 error?.printStackTrace()
                 _uiState.update { it.copy(statusKnown = false) }
-                if (!silent) _toastMessage.emit(Constants.NETWORK_ERROR)
+                if (!silent) ToastBus.send(Constants.NETWORK_ERROR)
             }
             return
         }
@@ -286,7 +195,6 @@ class MainViewModel : ViewModel() {
                 repo.saveStartTime(serverStart)
                 serverStart
             } else {
-                // 在线状态接口不返回开始时间，先从本地拿，再不行去签到记录里找
                 repo.ongoingStartTime()
                     ?: fetchStartTimeFromRecords(uid)
                     ?: "暂无数据"
@@ -324,7 +232,6 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    /** 从签到记录里取当前这条的开始时间 */
     private suspend fun fetchStartTimeFromRecords(uid: String): String? {
         val start = repo.records(uid).getOrNull()
             ?.firstOrNull { it.status == "在线" }
@@ -335,25 +242,17 @@ class MainViewModel : ViewModel() {
         return start
     }
 
-    /** 服务端报错时优先用它自己的提示 */
-    private fun Throwable.userMessage(fallback: String): String =
-        if (this is ApiException) message?.takeIf { it.isNotBlank() } ?: fallback else fallback
-
-    /** 响应里带了 msg 就用它 */
-    private fun errorText(msg: String?, fallback: String): String =
-        msg?.takeIf { it.isNotBlank() } ?: fallback
-
     /** 判断签到签退 */
     fun signInOrOut() {
         val currentUid = _uiState.value.uid
         if (currentUid.isEmpty() || currentUid == "null") {
-            viewModelScope.launch { _toastMessage.emit("请先输入学号") }
+            ToastBus.send("请先输入学号")
             return
         }
         val netState = NetworkUtil.currentState(KexieApplication.instance)
         _uiState.update { it.copy(netState = netState) }
         if (netState == NetworkUtil.NetState.Offline) {
-            viewModelScope.launch { _toastMessage.emit("网络不可用，请检查网络") }
+            ToastBus.send("网络不可用，请检查网络")
             return
         }
         if (_uiState.value.online) {
@@ -372,7 +271,7 @@ class MainViewModel : ViewModel() {
                         0 -> {
                             val data = res.data
                             if (data == null) {
-                                _toastMessage.emit("签到失败！")
+                                ToastBus.send("签到失败！")
                                 return@onSuccess
                             }
                             val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
@@ -399,31 +298,28 @@ class MainViewModel : ViewModel() {
                                     statusKnown = true,
                                 )
                             }
-                            _toastMessage.emit("签到成功，美美上工")
+                            ToastBus.send("签到成功，美美上工")
                             fetchOnlineUsers()
-                            // 多了一条记录，热力图缓存作废
-                            heatmapDays = null
-                            recordItems = null
                             repo.clearHeatmapCache()
                             repo.clearRecordsCache()
+                            CacheEventBus.notifyCleared()
                         }
 
                         -201 -> {
-                            // 重复签到，补全数据
                             uidDirty = false
                             _uiState.update {
                                 it.copy(online = true, selfUid = uid, statusKnown = true)
                             }
-                            _toastMessage.emit("你已处于签到状态，正在同步信息")
+                            ToastBus.send("你已处于签到状态，正在同步信息")
                             fetchOnlineStatus(uid)
                         }
 
-                        -205 -> _toastMessage.emit("宁操作太频繁了\n请稍后重试")
-                        -206 -> _toastMessage.emit("别熬夜鸭，该时段不允许签到哦")
-                        else -> _toastMessage.emit(errorText(res.msg, "签到失败！"))
+                        -205 -> ToastBus.send("宁操作太频繁了\n请稍后重试")
+                        -206 -> ToastBus.send("别熬夜鸭，该时段不允许签到哦")
+                        else -> ToastBus.send(errorText(res.msg, "签到失败！"))
                     }
                 }
-                .onFailure { _toastMessage.emit(it.userMessage(Constants.NETWORK_ERROR)) }
+                .onFailure { ToastBus.send(it.userMessage(Constants.NETWORK_ERROR)) }
         }
     }
 
@@ -436,7 +332,7 @@ class MainViewModel : ViewModel() {
                         0 -> {
                             val data = res.data
                             if (data == null) {
-                                _toastMessage.emit("签退失败！")
+                                ToastBus.send("签退失败！")
                                 return@onSuccess
                             }
                             repo.saveSession(
@@ -460,24 +356,23 @@ class MainViewModel : ViewModel() {
                                     statusKnown = true,
                                 )
                             }
-                            _toastMessage.emit("签退成功，辛苦了")
+                            ToastBus.send("签退成功，辛苦了")
                             stopAutoService()
-                            heatmapDays = null
-                            recordItems = null
                             repo.clearHeatmapCache()
                             repo.clearRecordsCache()
+                            CacheEventBus.notifyCleared()
                         }
 
                         -202 -> {
                             _uiState.update { it.copy(online = false, statusKnown = true) }
-                            _toastMessage.emit("您还没有签到！")
+                            ToastBus.send("您还没有签到！")
                             stopAutoService()
                         }
 
-                        else -> _toastMessage.emit(errorText(res.msg, "签退失败！"))
+                        else -> ToastBus.send(errorText(res.msg, "签退失败！"))
                     }
                 }
-                .onFailure { _toastMessage.emit(it.userMessage(Constants.NETWORK_ERROR)) }
+                .onFailure { ToastBus.send(it.userMessage(Constants.NETWORK_ERROR)) }
         }
     }
 
@@ -486,7 +381,7 @@ class MainViewModel : ViewModel() {
         viewModelScope.launch {
             repo.onlineMembers()
                 .onSuccess { users -> _uiState.update { it.copy(onlineUsers = users) } }
-                .onFailure { _toastMessage.emit(it.userMessage("获取在线用户列表失败")) }
+                .onFailure { ToastBus.send(it.userMessage("获取在线用户列表失败")) }
         }
     }
 
@@ -497,154 +392,13 @@ class MainViewModel : ViewModel() {
             repo.complaint(targetUid = item.userId.toString(), operatorUid = operatorUid)
                 .onSuccess { msg ->
                     if (msg == "举报成功") {
-                        _toastMessage.emit("举报成功")
+                        ToastBus.send("举报成功")
                         checkOnlineStatus()
                     } else {
-                        _toastMessage.emit("举报失败")
+                        ToastBus.send("举报失败")
                     }
                 }
-                .onFailure { _toastMessage.emit(it.userMessage(Constants.NETWORK_ERROR)) }
-        }
-    }
-
-    /** 获取排名数据 */
-    fun fetchTopFive() {
-        viewModelScope.launch {
-            repo.topFive()
-                .onSuccess { list -> _uiState.update { it.copy(topFiveList = list) } }
-                .onFailure {
-                    it.printStackTrace()
-                    _toastMessage.emit(it.userMessage("获取排行榜失败"))
-                }
-        }
-    }
-
-    /** 热力图有本地缓存先显示，超过 6 小时或强制刷新才去拉记录 */
-    fun fetchHeatmap(force: Boolean = false) {
-        if (_uiState.value.heatmapLoading) return
-        if (!force && heatmapDays != null) return
-        viewModelScope.launch {
-            if (!force) {
-                val cached = repo.heatmapCache()
-                if (cached != null) {
-                    applyHeatmapDays(cached.days)
-                    if (System.currentTimeMillis() - cached.fetchedAt < CACHE_TTL_MS) return@launch
-                }
-            }
-            _uiState.update { it.copy(heatmapLoading = true) }
-            val uid = repo.savedUid()
-            if (uid == "null") {
-                _uiState.update { it.copy(heatmapLoading = false) }
-                return@launch
-            }
-            val records = repo.records(uid).getOrElse { error ->
-                _uiState.update { it.copy(heatmapLoading = false) }
-                _toastMessage.emit(error.userMessage("获取签到记录失败"))
-                return@launch
-            }
-            recordItems = records
-            val days = HeatmapBuilder.dailyMinutes(records)
-            repo.saveHeatmapCache(days)
-            repo.saveRecordsCache(records)
-            applyHeatmapDays(days)
-            if (force) _toastMessage.emit("签到记录已刷新")
-        }
-    }
-
-    /** 拉全部签到记录，记录列表页用；有缓存先显示，支持离线 */
-    fun fetchRecords(force: Boolean = false) {
-        if (_uiState.value.recordsLoading) return
-        val memory = recordItems
-        if (!force && memory != null) {
-            _uiState.update { it.copy(records = memory) }
-            return
-        }
-        viewModelScope.launch {
-            if (!force) {
-                val cached = repo.recordsCache()
-                if (cached != null) {
-                    recordItems = cached.items
-                    _uiState.update { it.copy(records = cached.items) }
-                    if (System.currentTimeMillis() - cached.fetchedAt < CACHE_TTL_MS) return@launch
-                }
-            }
-            _uiState.update { it.copy(recordsLoading = true) }
-            val uid = repo.savedUid()
-            val records = if (uid == "null") {
-                emptyList()
-            } else {
-                repo.records(uid).getOrElse { error ->
-                    _uiState.update {
-                        it.copy(recordsLoading = false, recordsStale = recordItems != null)
-                    }
-                    if (recordItems == null) {
-                        _toastMessage.emit(error.userMessage("获取签到记录失败"))
-                    }
-                    return@launch
-                }
-            }
-            recordItems = records
-            repo.saveRecordsCache(records)
-            // 顺手把热力图和累计数据也更新了，免得两个页面不一致
-            val days = HeatmapBuilder.dailyMinutes(records)
-            repo.saveHeatmapCache(days)
-            applyHeatmapDays(days)
-            _uiState.update {
-                it.copy(records = records, recordsLoading = false, recordsStale = false)
-            }
-            if (force) _toastMessage.emit("签到记录已刷新")
-        }
-    }
-
-    /** 往前/往后翻半年，step 为 -1 表示更早的半年 */
-    fun shiftHeatmap(step: Int) {
-        val state = _uiState.value
-        val target = (state.heatmapOffset + step).coerceIn(state.heatmapMinOffset, 0)
-        if (target == state.heatmapOffset) return
-        rebuildHeatmap(target)
-    }
-
-    private fun applyHeatmapDays(days: Map<String, Int>) {
-        heatmapDays = days
-        val minOffset = days.keys.minOrNull()?.let(::minHeatmapOffset) ?: 0
-        _uiState.update {
-            it.copy(
-                heatmapMinOffset = minOffset,
-                heatmapOffset = it.heatmapOffset.coerceIn(minOffset, 0),
-                heatmapLoading = false,
-                totalSignDays = days.size,
-                totalSignMinutes = days.values.sum(),
-            )
-        }
-        rebuildHeatmap(_uiState.value.heatmapOffset)
-    }
-
-    /** 最早那条记录落在哪半年 */
-    private fun minHeatmapOffset(earliest: String): Int {
-        var offset = 0
-        while (offset > -MAX_HEATMAP_OFFSET && windowStart(offset) > earliest) {
-            offset--
-        }
-        return offset
-    }
-
-    /** 某个半年窗口的起始日（周一），yyyy-MM-dd */
-    private fun windowStart(offset: Int): String {
-        val anchor = Calendar.getInstance().apply { add(Calendar.MONTH, offset * HEATMAP_MONTHS) }
-        val start = (anchor.clone() as Calendar).apply { add(Calendar.MONTH, -HEATMAP_MONTHS) }
-        start.add(Calendar.DAY_OF_YEAR, -((start.get(Calendar.DAY_OF_WEEK) + 5) % 7))
-        return SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(start.time)
-    }
-
-    private fun rebuildHeatmap(offset: Int) {
-        val days = heatmapDays ?: return
-        val anchor = Calendar.getInstance().apply { add(Calendar.MONTH, offset * HEATMAP_MONTHS) }
-        _uiState.update {
-            it.copy(
-                heatmap = HeatmapBuilder.build(days, HEATMAP_MONTHS, anchor),
-                heatmapOffset = offset,
-                heatmapLoading = false,
-            )
+                .onFailure { ToastBus.send(it.userMessage(Constants.NETWORK_ERROR)) }
         }
     }
 
@@ -655,8 +409,7 @@ class MainViewModel : ViewModel() {
                 .onSuccess { res ->
                     when (res.code) {
                         0 -> {
-                            _toastMessage.emit("成功将该成员签退，谢谢你，好心人😊")
-                            // 自己的按钮已隐藏
+                            ToastBus.send("成功将该成员签退，谢谢你，好心人😊")
                             if (targetUid == repo.savedUid()) {
                                 checkOnlineStatus()
                             } else {
@@ -664,11 +417,11 @@ class MainViewModel : ViewModel() {
                             }
                         }
 
-                        -202 -> _toastMessage.emit("该成员暂未签到！")
-                        else -> _toastMessage.emit(errorText(res.msg, "签退失败！"))
+                        -202 -> ToastBus.send("该成员暂未签到！")
+                        else -> ToastBus.send(errorText(res.msg, "签退失败！"))
                     }
                 }
-                .onFailure { _toastMessage.emit(it.userMessage(Constants.NETWORK_ERROR)) }
+                .onFailure { ToastBus.send(it.userMessage(Constants.NETWORK_ERROR)) }
         }
     }
 
@@ -707,13 +460,11 @@ class MainViewModel : ViewModel() {
                 pendingIntent
             )
             startAutoService()
-            viewModelScope.launch {
-                _toastMessage.emit("已设置在 ${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')} 自动签退")
-            }
+            ToastBus.send(
+                "已设置在 ${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')} 自动签退"
+            )
         } catch (e: SecurityException) {
-            viewModelScope.launch {
-                _toastMessage.emit("设定失败")
-            }
+            ToastBus.send("设定失败")
         }
     }
 
@@ -721,65 +472,6 @@ class MainViewModel : ViewModel() {
         val intent = Intent(KexieApplication.instance, AutoService::class.java)
         ContextCompat.startForegroundService(KexieApplication.instance, intent)
     }
-
-    /** 检查 GitHub 最新 release，比当前版本新提示 */
-    fun checkUpdate() {
-        if (_uiState.value.updateChecking) return
-        viewModelScope.launch {
-            _uiState.update { it.copy(updateChecking = true) }
-            val result = GitHubClient.latestRelease(Constants.REPO_SLUG)
-            _uiState.update { it.copy(updateChecking = false) }
-            result
-                .onSuccess { release ->
-                    val url = release.htmlUrl.orEmpty()
-                    val tag = release.tagName?.takeIf { it.isNotBlank() }
-                    if (url.isBlank() || tag == null) {
-                        _toastMessage.emit("检查更新失败")
-                        return@onSuccess
-                    }
-                    if (compareVersion(tag, currentVersionName()) > 0) {
-                        val apkUrl = release.assets
-                            ?.firstOrNull { it.name?.endsWith(".apk", ignoreCase = true) == true }
-                            ?.browserDownloadUrl
-                        _uiState.update {
-                            it.copy(updateInfo = UpdateInfo(tag, url, apkUrl))
-                        }
-                    } else {
-                        _toastMessage.emit("已是最新版本")
-                    }
-                }
-                .onFailure { _toastMessage.emit("检查更新失败") }
-        }
-    }
-
-    /** 关掉更新提示 */
-    fun dismissUpdate() {
-        _uiState.update { it.copy(updateInfo = null) }
-    }
-
-    private fun currentVersionName(): String = runCatching {
-        @Suppress("DEPRECATION")
-        KexieApplication.instance.packageManager
-            .getPackageInfo(KexieApplication.instance.packageName, 0).versionName
-    }.getOrNull().orEmpty()
-
-    /** 比较版本 */
-    private fun compareVersion(a: String, b: String): Int {
-        val left = versionParts(a)
-        val right = versionParts(b)
-        for (i in 0 until maxOf(left.size, right.size)) {
-            val diff = left.getOrElse(i) { 0 } - right.getOrElse(i) { 0 }
-            if (diff != 0) return diff
-        }
-        return 0
-    }
-
-    private fun versionParts(version: String): List<Int> =
-        version.trim()
-            .removePrefix("v")
-            .removePrefix("V")
-            .split('.', '-', '+', '_')
-            .map { part -> part.takeWhile { it.isDigit() }.toIntOrNull() ?: 0 }
 
     fun stopAutoService() {
         val intent = Intent(KexieApplication.instance, AutoService::class.java)

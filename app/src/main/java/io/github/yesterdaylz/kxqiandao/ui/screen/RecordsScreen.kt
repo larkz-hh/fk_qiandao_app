@@ -42,8 +42,8 @@ import androidx.compose.ui.unit.sp
 import io.github.yesterdaylz.kxqiandao.data.model.RecordItem
 import io.github.yesterdaylz.kxqiandao.ui.theme.KxTheme
 import io.github.yesterdaylz.kxqiandao.util.HeatmapBuilder
-import io.github.yesterdaylz.kxqiandao.viewmodel.MainUiState
-import io.github.yesterdaylz.kxqiandao.viewmodel.MainViewModel
+import io.github.yesterdaylz.kxqiandao.viewmodel.MineUiState
+import io.github.yesterdaylz.kxqiandao.viewmodel.MineViewModel
 import java.util.Locale
 
 private const val PAGE_SIZE = 20
@@ -54,8 +54,8 @@ private const val PAGE_SIZE = 20
 @Composable
 fun RecordsScreen(
     padding: PaddingValues,
-    uiState: MainUiState,
-    viewModel: MainViewModel,
+    uiState: MineUiState,
+    viewModel: MineViewModel,
     onBack: () -> Unit
 ) {
     LaunchedEffect(Unit) { viewModel.fetchRecords() }
@@ -118,7 +118,7 @@ fun RecordsScreen(
     }
 }
 
-/** 返回箭头 + 标题 + 刷新 */
+/** 顶部栏 */
 @Composable
 private fun RecordsTopBar(onBack: () -> Unit, onRefresh: () -> Unit, refreshing: Boolean) {
     Row(
@@ -149,7 +149,7 @@ private fun RecordsTopBar(onBack: () -> Unit, onRefresh: () -> Unit, refreshing:
     }
 }
 
-/** 底部分页：‹ 1 … 5 6 7 … 12 › */
+/** 底部分页 */
 @Composable
 private fun PageBar(page: Int, pageCount: Int, onSelect: (Int) -> Unit) {
     val colors = KxTheme.colors

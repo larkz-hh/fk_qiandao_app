@@ -49,20 +49,33 @@ import io.github.yesterdaylz.kxqiandao.ui.navigation.rememberTabNavState
 import io.github.yesterdaylz.kxqiandao.ui.theme.KxTheme
 import io.github.yesterdaylz.kxqiandao.util.Constants
 import io.github.yesterdaylz.kxqiandao.util.PermissionUtil
+import io.github.yesterdaylz.kxqiandao.util.ToastBus
 import io.github.yesterdaylz.kxqiandao.util.UrlRouter
 import io.github.yesterdaylz.kxqiandao.util.showToast
-import io.github.yesterdaylz.kxqiandao.viewmodel.MainViewModel
+import io.github.yesterdaylz.kxqiandao.viewmodel.MineViewModel
+import io.github.yesterdaylz.kxqiandao.viewmodel.RankingViewModel
+import io.github.yesterdaylz.kxqiandao.viewmodel.SettingsViewModel
+import io.github.yesterdaylz.kxqiandao.viewmodel.SignViewModel
 import java.util.Calendar
 
 @Composable
-fun MainScreen(viewModel: MainViewModel = viewModel()) {
+fun MainScreen(
+    signViewModel: SignViewModel = viewModel(),
+    rankingViewModel: RankingViewModel = viewModel(),
+    mineViewModel: MineViewModel = viewModel(),
+    settingsViewModel: SettingsViewModel = viewModel(),
+) {
     val context = LocalContext.current
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val signState by signViewModel.uiState.collectAsStateWithLifecycle()
+    val rankingState by rankingViewModel.uiState.collectAsStateWithLifecycle()
+    val mineState by mineViewModel.uiState.collectAsStateWithLifecycle()
+    val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+
     /// 收集 Toast 事件
     LaunchedEffect(Unit) {
-        viewModel.toastMessage.collect { msg ->
+        ToastBus.messages.collect { msg ->
             if (msg.isNotEmpty()) {
-                msg.showToast(context,Toast.LENGTH_SHORT)
+                msg.showToast(context, Toast.LENGTH_SHORT)
             }
         }
     }
@@ -77,7 +90,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
 
     // 切后台再回来，签到状态可能变化
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
-        viewModel.checkOnlineStatus(silent = true)
+        signViewModel.checkOnlineStatus(silent = true)
     }
 
     var pendingLocationRequest by remember { mutableStateOf<((Boolean) -> Unit)?>(null) }
@@ -121,9 +134,8 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
             if (showBars) {
                 MainTopBar(
                     onLogoDoubleTap = {
-                        // 已经在签到页就手动刷新一次状态，否则切回签到页
                         if (selectedTab == AppDestination.CheckIn) {
-                            viewModel.refreshStatus()
+                            signViewModel.refreshStatus()
                         } else {
                             selectedTab = AppDestination.CheckIn
                         }
@@ -137,7 +149,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                             TimePickerDialog(
                                 context,
                                 { _, hourOfDay, minute ->
-                                    viewModel.scheduleSignOut(hourOfDay, minute)
+                                    signViewModel.scheduleSignOut(hourOfDay, minute)
                                 },
                                 calendar.get(Calendar.HOUR_OF_DAY),
                                 calendar.get(Calendar.MINUTE),
@@ -158,7 +170,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                     selected = selectedTab,
                     onSelect = { destination ->
                         selectedTab = destination
-                        if (destination == AppDestination.Ranking) viewModel.fetchTopFive() //切换到该页面时刷新数据
+                        if (destination == AppDestination.Ranking) rankingViewModel.fetchTopFive() //切换到该页面时刷新数据
                     }
                 )
             }
@@ -172,10 +184,14 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                 entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator()),
                 entryProvider = entryProvider {
                     entry<AppDestination.CheckIn> {
-                        CheckInTab(padding = padding, uiState = uiState, viewModel = viewModel)
+                        CheckInTab(
+                            padding = padding,
+                            uiState = signState,
+                            viewModel = signViewModel
+                        )
                     }
                     entry<AppDestination.Ranking> {
-                        RankingTab(padding = padding, topFiveList = uiState.topFiveList)
+                        RankingTab(padding = padding, topFiveList = rankingState.topFiveList)
                     }
                     entry<AppDestination.Entries> {
                         EntriesTab(padding = padding)
@@ -197,21 +213,26 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                         )
                     }
                     entry<AppDestination.Mine> {
-                        MineTab(padding = padding, uiState = uiState, viewModel = viewModel)
+                        MineTab(
+                            padding = padding,
+                            signState = signState,
+                            uiState = mineState,
+                            viewModel = mineViewModel
+                        )
                     }
                     entry<AppDestination.Records> {
                         RecordsScreen(
                             padding = padding,
-                            uiState = uiState,
-                            viewModel = viewModel,
+                            uiState = mineState,
+                            viewModel = mineViewModel,
                             onBack = { navState.navigator.goBack() }
                         )
                     }
                     entry<AppDestination.Settings> {
                         SettingsScreen(
                             padding = padding,
-                            uiState = uiState,
-                            viewModel = viewModel,
+                            uiState = settingsState,
+                            viewModel = settingsViewModel,
                             onOpenAbout = { navState.navigator.navigateTo(AppDestination.About) },
                             onBack = { navState.navigator.goBack() }
                         )
@@ -219,10 +240,10 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                     entry<AppDestination.About> {
                         AboutScreen(
                             padding = padding,
-                            updateChecking = uiState.updateChecking,
-                            updateInfo = uiState.updateInfo,
-                            onCheckUpdate = viewModel::checkUpdate,
-                            onDismissUpdate = viewModel::dismissUpdate,
+                            updateChecking = settingsState.updateChecking,
+                            updateInfo = settingsState.updateInfo,
+                            onCheckUpdate = settingsViewModel::checkUpdate,
+                            onDismissUpdate = settingsViewModel::dismissUpdate,
                             onBack = { navState.navigator.goBack() }
                         )
                     }

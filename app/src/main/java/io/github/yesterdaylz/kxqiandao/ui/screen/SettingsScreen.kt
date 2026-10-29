@@ -35,8 +35,8 @@ import io.github.yesterdaylz.kxqiandao.ui.theme.KxTheme
 import io.github.yesterdaylz.kxqiandao.ui.theme.ThemeMode
 import io.github.yesterdaylz.kxqiandao.util.Constants
 import io.github.yesterdaylz.kxqiandao.util.UrlRouter
-import io.github.yesterdaylz.kxqiandao.viewmodel.MainUiState
-import io.github.yesterdaylz.kxqiandao.viewmodel.MainViewModel
+import io.github.yesterdaylz.kxqiandao.viewmodel.SettingsUiState
+import io.github.yesterdaylz.kxqiandao.viewmodel.SettingsViewModel
 import java.util.Locale
 
 /**
@@ -45,8 +45,8 @@ import java.util.Locale
 @Composable
 fun SettingsScreen(
     padding: PaddingValues,
-    uiState: MainUiState,
-    viewModel: MainViewModel,
+    uiState: SettingsUiState,
+    viewModel: SettingsViewModel,
     onOpenAbout: () -> Unit,
     onBack: () -> Unit
 ) {

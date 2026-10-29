@@ -32,8 +32,8 @@ import androidx.compose.ui.unit.sp
 import io.github.yesterdaylz.kxqiandao.ui.component.OnlineItem
 import io.github.yesterdaylz.kxqiandao.ui.theme.KxTheme
 import io.github.yesterdaylz.kxqiandao.util.NetworkUtil
-import io.github.yesterdaylz.kxqiandao.viewmodel.MainUiState
-import io.github.yesterdaylz.kxqiandao.viewmodel.MainViewModel
+import io.github.yesterdaylz.kxqiandao.viewmodel.SignUiState
+import io.github.yesterdaylz.kxqiandao.viewmodel.SignViewModel
 
 /**
  * 签到页
@@ -41,8 +41,8 @@ import io.github.yesterdaylz.kxqiandao.viewmodel.MainViewModel
 @Composable
 fun CheckInTab(
     padding: PaddingValues,
-    uiState: MainUiState,
-    viewModel: MainViewModel
+    uiState: SignUiState,
+    viewModel: SignViewModel
 ) {
     val colors = KxTheme.colors
     Column(
@@ -184,7 +184,6 @@ private fun OnlineStatusCard(
     }
 }
 
-/** 不在科协网时的提示 */
 @Composable
 private fun CampusNetworkHint(state: NetworkUtil.NetState) {
     val colors = KxTheme.colors

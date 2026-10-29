@@ -41,8 +41,9 @@ import io.github.yesterdaylz.kxqiandao.ui.navigation.AppDestination
 import io.github.yesterdaylz.kxqiandao.ui.navigation.LocalTabNavigator
 import io.github.yesterdaylz.kxqiandao.ui.theme.KxTheme
 import io.github.yesterdaylz.kxqiandao.util.CheckInHeatmap
-import io.github.yesterdaylz.kxqiandao.viewmodel.MainUiState
-import io.github.yesterdaylz.kxqiandao.viewmodel.MainViewModel
+import io.github.yesterdaylz.kxqiandao.viewmodel.MineUiState
+import io.github.yesterdaylz.kxqiandao.viewmodel.MineViewModel
+import io.github.yesterdaylz.kxqiandao.viewmodel.SignUiState
 import java.util.Locale
 
 /**
@@ -51,8 +52,9 @@ import java.util.Locale
 @Composable
 fun MineTab(
     padding: PaddingValues,
-    uiState: MainUiState,
-    viewModel: MainViewModel
+    signState: SignUiState,
+    uiState: MineUiState,
+    viewModel: MineViewModel
 ) {
     LaunchedEffect(Unit) { viewModel.fetchHeatmap() }
     val navigator = LocalTabNavigator.current
@@ -66,8 +68,8 @@ fun MineTab(
             .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
         ProfileHeader(
-            uid = uiState.uid,
-            uname = uiState.uname,
+            uid = signState.uid,
+            uname = signState.uname,
             totalDays = uiState.totalSignDays,
             totalMinutes = uiState.totalSignMinutes
         )

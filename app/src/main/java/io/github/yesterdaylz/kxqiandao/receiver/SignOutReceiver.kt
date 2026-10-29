@@ -8,7 +8,7 @@ import io.github.yesterdaylz.kxqiandao.data.repository.SignRepository
 import io.github.yesterdaylz.kxqiandao.service.AutoService
 import io.github.yesterdaylz.kxqiandao.util.Constants
 import io.github.yesterdaylz.kxqiandao.util.showToast
-import io.github.yesterdaylz.kxqiandao.viewmodel.MainViewModel
+import io.github.yesterdaylz.kxqiandao.viewmodel.SignViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -38,7 +38,7 @@ class SignOutReceiver : BroadcastReceiver() {
 
                         repo.clearStartTime()
                         // 触发单例 flow 事件队列通知前台ui立即下线刷新
-                        MainViewModel.alarmSignOutEvent.tryEmit(Unit)
+                        SignViewModel.alarmSignOutEvent.tryEmit(Unit)
                         withContext(Dispatchers.Main) {
                             Constants.SIGN_OUT_AUTO.showToast(context, Toast.LENGTH_LONG)
                         }
