@@ -132,6 +132,20 @@ fun AboutScreen(
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             AboutRow(
+                label = "我要反馈",
+                onClick = { UrlRouter.openExternally(context, Constants.ISSUES_URL.toUri()) }
+            )
+        }
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = colors.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            AboutRow(
                 label = "检查更新",
                 value = if (updateChecking) "检查中…" else null,
                 enabled = !updateChecking,
