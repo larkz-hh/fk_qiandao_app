@@ -143,7 +143,7 @@ class SignViewModel : ViewModel() {
 
         viewModelScope.launch {
             val savedUid = repo.savedUid()
-            if (savedUid == "null") {
+            if (savedUid == "null" || savedUid.isBlank()) {
                 _uiState.update {
                     it.copy(
                         uid = "null",
@@ -168,6 +168,7 @@ class SignViewModel : ViewModel() {
 
     /** 实际在线状态 */
     private suspend fun fetchOnlineStatus(uid: String, silent: Boolean = false) {
+        if (uid.isBlank() || uid == "null") return
         val result = repo.onlineStatus(uid)
         val body = result.getOrNull()
 
@@ -188,6 +189,8 @@ class SignViewModel : ViewModel() {
 
         val totalTime = repo.savedTotalTime()
         val savedWeek = repo.savedWeek()
+        val serverUid = data.userId?.takeIf { it.isNotBlank() }
+        val serverName = data.userName?.takeIf { it.isNotBlank() }
 
         if (data.status == 1) {//在线
             val serverStart = data.start.orEmpty()
@@ -199,12 +202,14 @@ class SignViewModel : ViewModel() {
                     ?: fetchStartTimeFromRecords(uid)
                     ?: "暂无数据"
             }
-            repo.saveUname(data.userName.orEmpty())
+            serverName?.let { repo.saveUname(it) }
             _uiState.update { state ->
                 state.copy(
-                    uid = if (uidDirty) state.uid else data.userId.orEmpty(),
-                    selfUid = data.userId.orEmpty(),
-                    uname = data.userName.orEmpty(),
+                    uid = if (uidDirty) state.uid else (serverUid ?: state.uid),
+                    selfUid = serverUid ?: state.selfUid,
+                    uname = serverName
+                        ?: state.uname.takeIf { (serverUid ?: uid) == state.selfUid }
+                        ?: "",
                     time = "本次签到开始时间: $startTime",
                     totalTime = totalTime,
                     week = data.week?.toString() ?: savedWeek,
@@ -218,9 +223,11 @@ class SignViewModel : ViewModel() {
             repo.clearStartTime()
             _uiState.update { state ->
                 state.copy(
-                    uid = if (uidDirty) state.uid else data.userId.orEmpty(),
-                    selfUid = data.userId.orEmpty(),
-                    uname = data.userName.orEmpty(),
+                    uid = if (uidDirty) state.uid else (serverUid ?: state.uid),
+                    selfUid = serverUid ?: state.selfUid,
+                    uname = serverName
+                        ?: state.uname.takeIf { (serverUid ?: uid) == state.selfUid }
+                        ?: "",
                     time = TIME_NULL,
                     totalTime = totalTime,
                     week = data.week?.toString() ?: savedWeek,
@@ -271,15 +278,27 @@ class SignViewModel : ViewModel() {
                         0 -> {
                             val data = res.data
                             if (data == null) {
-                                ToastBus.send("签到失败！")
+                                uidDirty = false
+                                _uiState.update {
+                                    it.copy(online = true, selfUid = uid, statusKnown = true)
+                                }
+                                ToastBus.send("已处于签到状态，正在同步信息")
+                                fetchOnlineStatus(uid)
                                 return@onSuccess
                             }
                             val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
                             val formattedTime = formatter.format(Date())
 
+                            val newUid = data.userId?.takeIf { it.isNotBlank() } ?: uid
+                            val cachedName = _uiState.value.uname.takeIf {
+                                newUid == _uiState.value.selfUid && it.isNotBlank()
+                            }
+                            val newName = data.userName?.takeIf { it.isNotBlank() }
+                                ?: cachedName.orEmpty()
+
                             repo.saveSession(
-                                uid = data.userId.orEmpty(),
-                                uname = data.userName.orEmpty(),
+                                uid = newUid,
+                                uname = newName,
                                 totalTime = data.totalTime.orEmpty(),
                                 week = data.week.orEmpty(),
                             )
@@ -288,9 +307,9 @@ class SignViewModel : ViewModel() {
 
                             _uiState.update {
                                 it.copy(
-                                    uid = data.userId.orEmpty(),
-                                    selfUid = data.userId.orEmpty(),
-                                    uname = data.userName.orEmpty(),
+                                    uid = newUid,
+                                    selfUid = newUid,
+                                    uname = newName,
                                     totalTime = data.totalTime.orEmpty(),
                                     week = data.week.orEmpty(),
                                     time = "本次签到开始时间: $formattedTime",
@@ -299,6 +318,7 @@ class SignViewModel : ViewModel() {
                                 )
                             }
                             ToastBus.send("签到成功，美美上工")
+                            if (newName.isBlank()) fetchOnlineStatus(newUid)
                             fetchOnlineUsers()
                             repo.clearHeatmapCache()
                             repo.clearRecordsCache()
@@ -335,9 +355,16 @@ class SignViewModel : ViewModel() {
                                 ToastBus.send("签退失败！")
                                 return@onSuccess
                             }
+                            val newUid = data.userId?.takeIf { it.isNotBlank() } ?: uid
+                            val cachedName = _uiState.value.uname.takeIf {
+                                newUid == _uiState.value.selfUid && it.isNotBlank()
+                            }
+                            val newName = data.userName?.takeIf { it.isNotBlank() }
+                                ?: cachedName.orEmpty()
+
                             repo.saveSession(
-                                uid = data.userId.orEmpty(),
-                                uname = data.userName.orEmpty(),
+                                uid = newUid,
+                                uname = newName,
                                 totalTime = data.totalTime.orEmpty(),
                                 week = data.week.orEmpty(),
                             )
@@ -346,9 +373,9 @@ class SignViewModel : ViewModel() {
 
                             _uiState.update {
                                 it.copy(
-                                    uid = data.userId.orEmpty(),
-                                    selfUid = data.userId.orEmpty(),
-                                    uname = data.userName.orEmpty(),
+                                    uid = newUid,
+                                    selfUid = newUid,
+                                    uname = newName,
                                     totalTime = data.totalTime.orEmpty(),
                                     week = data.week.orEmpty(),
                                     time = "本次签到时长: ${data.accumulatedTime.orEmpty()}",

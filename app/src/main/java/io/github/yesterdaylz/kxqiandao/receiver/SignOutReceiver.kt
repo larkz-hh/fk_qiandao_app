@@ -28,7 +28,7 @@ class SignOutReceiver : BroadcastReceiver() {
                         if (body.code == 0) {
                             body.data?.let { data ->
                                 repo.saveSession(
-                                    uid = data.userId.orEmpty(),
+                                    uid = data.userId?.takeIf { it.isNotBlank() } ?: uid,
                                     uname = data.userName.orEmpty(),
                                     totalTime = data.totalTime.orEmpty(),
                                     week = data.week.orEmpty(),

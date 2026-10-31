@@ -63,7 +63,7 @@ class SignRepository(
         week: String,
     ) {
         prefs.saveUid(uid)
-        prefs.saveUname(uname)
+        if (uname.isNotBlank()) prefs.saveUname(uname)
         prefs.saveTotalTime(totalTime)
         prefs.saveWeek(week)
     }
