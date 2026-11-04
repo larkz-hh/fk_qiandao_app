@@ -47,6 +47,7 @@ import io.github.yesterdaylz.kxqiandao.ui.navigation.AppDestination
 import io.github.yesterdaylz.kxqiandao.ui.navigation.LocalTabNavigator
 import io.github.yesterdaylz.kxqiandao.ui.navigation.rememberTabNavState
 import io.github.yesterdaylz.kxqiandao.ui.theme.KxTheme
+import io.github.yesterdaylz.kxqiandao.util.CacheEventBus
 import io.github.yesterdaylz.kxqiandao.util.Constants
 import io.github.yesterdaylz.kxqiandao.util.PermissionUtil
 import io.github.yesterdaylz.kxqiandao.util.ToastBus
@@ -125,6 +126,14 @@ fun MainScreen(
         onDispose {
             knowledgeHolder.destroy()
             campusRunHolder.destroy()
+        }
+    }
+
+    // 设置页清理缓存时，顺手把两个 WebView 的网页缓存也清掉
+    LaunchedEffect(Unit) {
+        CacheEventBus.webCleared.collect {
+            knowledgeHolder.clearCache(context)
+            campusRunHolder.clearCache(context)
         }
     }
 

@@ -65,6 +65,19 @@ class WebPageViewHolder(
         webView?.reload()
     }
 
+    /** 清掉网页缓存和表单记录，站点登录态不受影响 */
+    fun clearCache(context: Context) {
+        val view = webView
+        if (view != null) {
+            view.clearCache(true)
+            view.clearFormData()
+        } else {
+            val temp = WebView(context.applicationContext)
+            temp.clearCache(true)
+            temp.destroy()
+        }
+    }
+
     /** 浏览器打开 */
     fun openInBrowser(context: Context) {
         UrlRouter.openExternally(context, startUrl.toUri())

@@ -9,11 +9,16 @@ import io.github.yesterdaylz.kxqiandao.ui.theme.ThemeMode
 import io.github.yesterdaylz.kxqiandao.util.CacheEventBus
 import io.github.yesterdaylz.kxqiandao.util.Constants
 import io.github.yesterdaylz.kxqiandao.util.ToastBus
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+import kotlin.time.Duration.Companion.milliseconds
 
 data class SettingsUiState(
     val themeMode: ThemeMode = ThemeMode.System,
@@ -42,10 +47,10 @@ class SettingsViewModel : ViewModel() {
         viewModelScope.launch { repo.saveThemeMode(mode.key) }
     }
 
-    /** 重新计算本地缓存占用 */
+    /** 重新计算本地缓存占用（数据缓存 + 网页缓存） */
     fun refreshCacheSize() {
         viewModelScope.launch {
-            val size = repo.cacheSizeBytes()
+            val size = repo.cacheSizeBytes() + webCacheBytes()
             _uiState.update { it.copy(cacheSizeBytes = size) }
         }
     }
@@ -57,10 +62,35 @@ class SettingsViewModel : ViewModel() {
             repo.clearRecordsCache()
             repo.clearRankingCache()
             CacheEventBus.notifyCleared()
-            _uiState.update { it.copy(cacheSizeBytes = 0) }
+            CacheEventBus.notifyWebCleared()
             ToastBus.send("缓存已清理")
+            delay(300.milliseconds)
+            refreshCacheSize()
         }
     }
+
+    /** 网页缓存占的字节数 */
+    private suspend fun webCacheBytes(): Long = withContext(Dispatchers.IO) {
+        webCacheDirs().filter { it.exists() }.sumOf { dirSize(it) }
+    }
+
+    /** WebView 的磁盘缓存目录 */
+    private fun webCacheDirs(): List<File> {
+        val data = KexieApplication.instance.dataDir
+        val cache = KexieApplication.instance.cacheDir
+        return listOf(
+            File(data, "app_webview/Default/HTTP Cache"),
+            File(data, "app_webview/Default/Code Cache"),
+            File(data, "app_webview/Default/GPUCache"),
+            File(data, "app_webview/HTTP Cache"),
+            File(cache, "WebView"),
+        )
+    }
+
+    /** 目录总大小 */
+    private fun dirSize(dir: File): Long = runCatching {
+        dir.walkTopDown().filter { it.isFile }.sumOf { it.length() }
+    }.getOrDefault(0L)
 
     /** 检查 GitHub 最新 release */
     fun checkUpdate() {
