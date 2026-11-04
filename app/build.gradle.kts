@@ -1,8 +1,17 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.serialization)
+}
+
+val signingProps = Properties().apply {
+    listOf("local.properties", "keystore.properties").forEach { name ->
+        val file = rootProject.file(name)
+        if (file.exists()) file.inputStream().use { load(it) }
+    }
 }
 
 android {
@@ -17,19 +26,43 @@ android {
         applicationId = "io.github.yesterdaylz.kxqiandao"
         minSdk = 24
         targetSdk = 36
-        versionCode = 2
-        versionName = "3.0.0"
+        versionCode = 3
+        versionName = "4.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            val storePath = signingProps.getProperty("signing.storeFile")
+            if (storePath != null) {
+                storeFile = file(storePath)
+                storePassword = signingProps.getProperty("signing.storePassword")
+                keyAlias = signingProps.getProperty("signing.keyAlias")
+                keyPassword = signingProps.getProperty("signing.keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            if (signingProps.getProperty("signing.storeFile") != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
+    }
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a")
+            isUniversalApk = true
         }
     }
     compileOptions {
