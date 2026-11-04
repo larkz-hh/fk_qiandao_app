@@ -6,6 +6,7 @@ import io.github.yesterdaylz.kxqiandao.data.model.ApiResponse
 import io.github.yesterdaylz.kxqiandao.data.model.ComplaintRequestBody
 import io.github.yesterdaylz.kxqiandao.data.model.HeatmapCache
 import io.github.yesterdaylz.kxqiandao.data.model.OnlineStatusResponse
+import io.github.yesterdaylz.kxqiandao.data.model.RankingCache
 import io.github.yesterdaylz.kxqiandao.data.model.RecordItem
 import io.github.yesterdaylz.kxqiandao.data.model.RecordsCache
 import io.github.yesterdaylz.kxqiandao.data.model.SignResponse
@@ -30,6 +31,10 @@ class SignRepository(
 
     private val recordsAdapter by lazy {
         RetrofitClient.moshi.adapter(RecordsCache::class.java)
+    }
+
+    private val rankingAdapter by lazy {
+        RetrofitClient.moshi.adapter(RankingCache::class.java)
     }
 
     // 本地会话
@@ -85,11 +90,13 @@ class SignRepository(
 
     // 热力图缓存
 
-    /** 热力图 + 签到记录缓存占的字节数 */
+    /** 热力图、签到记录、排行榜缓存占的字节数 */
     suspend fun cacheSizeBytes(): Long {
         val heatmap = prefs.heatmapCache.first().toByteArray().size
         val records = prefs.recordsCache.first().toByteArray().size
-        return (heatmap + records).toLong()
+        val rankingNew = prefs.rankingNewCache.first().toByteArray().size
+        val rankingOld = prefs.rankingOldCache.first().toByteArray().size
+        return (heatmap + records + rankingNew + rankingOld).toLong()
     }
 
     /** 读热力图缓存 */
@@ -135,6 +142,27 @@ class SignRepository(
         prefs.saveRecordsCache("")
     }
 
+    /** 读排行榜缓存，oldMan = true 老生榜 */
+    suspend fun rankingCache(oldMan: Boolean): RankingCache? {
+        val raw = (if (oldMan) prefs.rankingOldCache else prefs.rankingNewCache).first()
+        if (raw.isBlank()) return null
+        return runCatching { rankingAdapter.fromJson(raw) }.getOrNull()
+    }
+
+    /** 存排行榜缓存 */
+    suspend fun saveRankingCache(oldMan: Boolean, items: List<TopFiveItem>) {
+        val json = runCatching {
+            rankingAdapter.toJson(RankingCache(fetchedAt = System.currentTimeMillis(), items = items))
+        }.getOrNull() ?: return
+        prefs.saveRankingCache(json, oldMan)
+    }
+
+    /** 清空排行榜缓存 */
+    suspend fun clearRankingCache() {
+        prefs.saveRankingCache("", oldMan = false)
+        prefs.saveRankingCache("", oldMan = true)
+    }
+
     // 网络
 
     /** 签到 */
@@ -155,8 +183,8 @@ class SignRepository(
         call { api.recordOnline() }.map { it.data ?: emptyList() }
 
     /** 拉取排名 */
-    suspend fun topFive(): Result<List<TopFiveItem>> =
-        call { api.topFive() }.map { it.data ?: emptyList() }
+    suspend fun topFive(oldMan: Boolean = false): Result<List<TopFiveItem>> =
+        call { api.topFive(oldMan.takeIf { it }) }.map { it.data ?: emptyList() }
 
     /** 举报 */
     suspend fun complaint(targetUid: String, operatorUid: String): Result<String> = call {

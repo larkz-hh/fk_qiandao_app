@@ -170,7 +170,6 @@ fun MainScreen(
                     selected = selectedTab,
                     onSelect = { destination ->
                         selectedTab = destination
-                        if (destination == AppDestination.Ranking) rankingViewModel.fetchTopFive() //切换到该页面时刷新数据
                     }
                 )
             }
@@ -191,7 +190,13 @@ fun MainScreen(
                         )
                     }
                     entry<AppDestination.Ranking> {
-                        RankingTab(padding = padding, topFiveList = rankingState.topFiveList)
+                        RankingTab(
+                            padding = padding,
+                            uiState = rankingState,
+                            onLoad = { rankingViewModel.loadTopFive() },
+                            onRefresh = rankingViewModel::refresh,
+                            onSelectGroup = rankingViewModel::switchGroup,
+                        )
                     }
                     entry<AppDestination.Entries> {
                         EntriesTab(padding = padding)

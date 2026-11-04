@@ -55,6 +55,7 @@ class SettingsViewModel : ViewModel() {
         viewModelScope.launch {
             repo.clearHeatmapCache()
             repo.clearRecordsCache()
+            repo.clearRankingCache()
             CacheEventBus.notifyCleared()
             _uiState.update { it.copy(cacheSizeBytes = 0) }
             ToastBus.send("缓存已清理")

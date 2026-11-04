@@ -13,6 +13,7 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface ApiService {
     ///签入
@@ -34,6 +35,7 @@ interface ApiService {
     @POST("/api/user/complaint")
     suspend fun complaint(@Body body: ComplaintRequestBody): Response<ComplaintResponse>
 
+    /** 排行榜，old-man=true 查老生榜 */
     @GET("/api/record/topFive")
-    suspend fun topFive(): Response<TopFiveResponse>
+    suspend fun topFive(@Query("old-man") oldMan: Boolean? = null): Response<TopFiveResponse>
 }
