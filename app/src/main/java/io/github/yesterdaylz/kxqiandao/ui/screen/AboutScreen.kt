@@ -21,6 +21,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
@@ -110,41 +111,20 @@ fun AboutScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
             shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = colors.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            colors = CardDefaults.cardColors(containerColor = colors.surface)
         ) {
             AboutRow(
                 label = "GitHub 仓库",
                 onClick = { UrlRouter.openExternally(context, Constants.REPO_URL.toUri()) }
             )
-        }
-
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = colors.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
+            HorizontalDivider(color = colors.divider, thickness = 1.dp)
             AboutRow(
                 label = "我要反馈",
                 onClick = { UrlRouter.openExternally(context, Constants.ISSUES_URL.toUri()) }
             )
-        }
-
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = colors.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
+            HorizontalDivider(color = colors.divider, thickness = 1.dp)
             AboutRow(
                 label = "检查更新",
                 value = if (updateChecking) "检查中…" else null,

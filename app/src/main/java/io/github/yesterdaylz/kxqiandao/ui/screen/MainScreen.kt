@@ -1,5 +1,7 @@
 package io.github.yesterdaylz.kxqiandao.ui.screen
 
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.*
 import android.Manifest
 import android.app.TimePickerDialog
 import android.widget.Toast
@@ -189,6 +191,12 @@ fun MainScreen(
             NavDisplay(
                 backStack = navState.currentStack,
                 onBack = { navState.navigator.goBack() },
+                transitionSpec = {
+                    fadeIn(animationSpec = spring()) togetherWith fadeOut(animationSpec = spring())
+                },
+                popTransitionSpec = {
+                    fadeIn(animationSpec = spring()) togetherWith fadeOut(animationSpec = spring())
+                },
                 entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator()),
                 entryProvider = entryProvider {
                     entry<AppDestination.CheckIn> {
