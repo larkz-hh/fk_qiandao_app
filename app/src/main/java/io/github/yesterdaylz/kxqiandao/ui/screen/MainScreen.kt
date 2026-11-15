@@ -7,18 +7,10 @@ import android.app.TimePickerDialog
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Alarm
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,12 +22,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -44,7 +33,7 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import io.github.yesterdaylz.kxqiandao.ui.component.AppBottomBar
-import io.github.yesterdaylz.kxqiandao.ui.component.AppLogo
+import io.github.yesterdaylz.kxqiandao.ui.component.AppTopBar
 import io.github.yesterdaylz.kxqiandao.ui.navigation.AppDestination
 import io.github.yesterdaylz.kxqiandao.ui.navigation.LocalTabNavigator
 import io.github.yesterdaylz.kxqiandao.ui.navigation.rememberTabNavState
@@ -139,42 +128,42 @@ fun MainScreen(
         }
     }
 
+    // 顶栏归页面所有
+    val mainTopBar: @Composable () -> Unit = {
+        AppTopBar(
+            onLogoDoubleTap = {
+                if (selectedTab == AppDestination.CheckIn) {
+                    signViewModel.refreshStatus()
+                } else {
+                    selectedTab = AppDestination.CheckIn
+                }
+            },
+            onScheduleSignOut = {
+                if (PermissionUtil.ensureBatteryOptimizationDisabled(context) &&
+                    PermissionUtil.ensureExactAlarmPermission(context)
+                ) {
+                    // 先用老 TimePickerDialog 吧
+                    val calendar = Calendar.getInstance()
+                    TimePickerDialog(
+                        context,
+                        { _, hourOfDay, minute ->
+                            signViewModel.scheduleSignOut(hourOfDay, minute)
+                        },
+                        calendar.get(Calendar.HOUR_OF_DAY),
+                        calendar.get(Calendar.MINUTE),
+                        true
+                    ).apply {
+                        setTitle("设置签退时间")
+                        setMessage("温馨提醒，本功能启动前提：\n1. 连接在科协网里\n2. 请勿关闭通知栏中的保活通知")
+                        show()
+                    }
+                }
+            }
+        )
+    }
+
     Scaffold(
         containerColor = KxTheme.colors.background,
-        topBar = {
-            if (showBars) {
-                MainTopBar(
-                    onLogoDoubleTap = {
-                        if (selectedTab == AppDestination.CheckIn) {
-                            signViewModel.refreshStatus()
-                        } else {
-                            selectedTab = AppDestination.CheckIn
-                        }
-                    },
-                    onScheduleSignOut = {
-                        if (PermissionUtil.ensureBatteryOptimizationDisabled(context) &&
-                            PermissionUtil.ensureExactAlarmPermission(context)
-                        ) {
-                            // 先用老 TimePickerDialog 吧
-                            val calendar = Calendar.getInstance()
-                            TimePickerDialog(
-                                context,
-                                { _, hourOfDay, minute ->
-                                    signViewModel.scheduleSignOut(hourOfDay, minute)
-                                },
-                                calendar.get(Calendar.HOUR_OF_DAY),
-                                calendar.get(Calendar.MINUTE),
-                                true
-                            ).apply {
-                                setTitle("设置签退时间")
-                                setMessage("温馨提醒，本功能启动前提：\n1. 连接在科协网里\n2. 请勿关闭通知栏中的保活通知")
-                                show()
-                            }
-                        }
-                    }
-                )
-            }
-        },
         bottomBar = {
             if (showBars) {
                 AppBottomBar(
@@ -200,23 +189,32 @@ fun MainScreen(
                 entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator()),
                 entryProvider = entryProvider {
                     entry<AppDestination.CheckIn> {
-                        CheckInTab(
-                            padding = padding,
-                            uiState = signState,
-                            viewModel = signViewModel
-                        )
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            mainTopBar()
+                            CheckInTab(
+                                padding = PaddingValues(bottom = padding.calculateBottomPadding()),
+                                uiState = signState,
+                                viewModel = signViewModel
+                            )
+                        }
                     }
                     entry<AppDestination.Ranking> {
-                        RankingTab(
-                            padding = padding,
-                            uiState = rankingState,
-                            onLoad = { rankingViewModel.loadTopFive() },
-                            onRefresh = rankingViewModel::refresh,
-                            onSelectGroup = rankingViewModel::switchGroup,
-                        )
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            mainTopBar()
+                            RankingTab(
+                                padding = PaddingValues(bottom = padding.calculateBottomPadding()),
+                                uiState = rankingState,
+                                onLoad = { rankingViewModel.loadTopFive() },
+                                onRefresh = rankingViewModel::refresh,
+                                onSelectGroup = rankingViewModel::switchGroup,
+                            )
+                        }
                     }
                     entry<AppDestination.Entries> {
-                        EntriesTab(padding = padding)
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            mainTopBar()
+                            EntriesTab(padding = PaddingValues(bottom = padding.calculateBottomPadding()))
+                        }
                     }
                     entry<AppDestination.Knowledge> {
                         WebPageScreen(
@@ -235,12 +233,15 @@ fun MainScreen(
                         )
                     }
                     entry<AppDestination.Mine> {
-                        MineTab(
-                            padding = padding,
-                            signState = signState,
-                            uiState = mineState,
-                            viewModel = mineViewModel
-                        )
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            mainTopBar()
+                            MineTab(
+                                padding = PaddingValues(bottom = padding.calculateBottomPadding()),
+                                signState = signState,
+                                uiState = mineState,
+                                viewModel = mineViewModel
+                            )
+                        }
                     }
                     entry<AppDestination.Records> {
                         RecordsScreen(
@@ -275,31 +276,3 @@ fun MainScreen(
     }
 }
 
-/** 顶栏：LOGO + 标题 + 定时签退 */
-@Composable
-private fun MainTopBar(
-    onLogoDoubleTap: () -> Unit,
-    onScheduleSignOut: () -> Unit,
-) {
-    Column(modifier = Modifier.statusBarsPadding()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                AppLogo(onDoubleTap = onLogoDoubleTap)
-                Spacer(modifier = Modifier.width(12.dp))
-                Text("三院科协", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-            }
-
-            if (Constants.ENABLE_SCHEDULED_SIGN_OUT) {
-                IconButton(onClick = onScheduleSignOut) {
-                    Icon(Icons.Default.Alarm, contentDescription = "定时签退")
-                }
-            }
-        }
-    }
-}
