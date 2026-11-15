@@ -1,6 +1,8 @@
-# <img src="app/src/main/res/drawable/logo.jpg" width="120" alt="logo" />   
+<p align="center">
+  <img src="app/src/main/res/drawable/logo.jpg" width="140" alt="logo" />
+</p>
 
-# 三院科协签到 App
+<h1 align="center">三院科协签到 App</h1>
 
 ## 个人需求
 

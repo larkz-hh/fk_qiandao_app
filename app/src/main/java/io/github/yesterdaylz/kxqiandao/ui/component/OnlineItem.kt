@@ -75,12 +75,12 @@ fun OnlineItem(
             )
         }
 
-        if (!isSelf) {
-            Column(
-                modifier = Modifier.weight(3.5f),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
+        Column(
+            modifier = Modifier.weight(3.5f),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            if (!isSelf) {
                 // 签退按钮
                 Button(
                     onClick = { showSignOutDialog = true },
