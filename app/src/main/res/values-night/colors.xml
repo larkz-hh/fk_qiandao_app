@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="widget_bg">#FF121212</color>
+    <color name="widget_on_bg">#FFE6E6E9</color>
+    <color name="widget_muted">#FFA5A5AC</color>
+    <color name="widget_online">#FF81C784</color>
+    <color name="widget_btn_sign_in">#FF6FB3E8</color>
+    <color name="widget_btn_sign_in_text">#FF0A2A44</color>
+    <color name="widget_btn_sign_out">#FF1C1C1E</color>
+    <color name="widget_btn_sign_out_text">#FFFF6B6B</color>
+    <color name="widget_btn_sign_out_stroke">#FF3A3A3C</color>
+</resources>

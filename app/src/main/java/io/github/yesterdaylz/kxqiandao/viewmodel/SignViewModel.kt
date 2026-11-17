@@ -23,6 +23,7 @@ import io.github.yesterdaylz.kxqiandao.util.NetworkUtil
 import io.github.yesterdaylz.kxqiandao.util.ToastBus
 import io.github.yesterdaylz.kxqiandao.util.errorText
 import io.github.yesterdaylz.kxqiandao.util.userMessage
+import io.github.yesterdaylz.kxqiandao.widget.refreshSignWidget
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -162,8 +163,13 @@ class SignViewModel : ViewModel() {
                 }
                 fetchOnlineStatus(savedUid, silent)
             }
+            refreshWidget()
             if (!silent) ToastBus.send(Constants.INIT_ONLINE_OK)
         }
+    }
+
+    private fun refreshWidget() {
+        viewModelScope.launch { refreshSignWidget() }
     }
 
     /** 实际在线状态 */
@@ -323,6 +329,7 @@ class SignViewModel : ViewModel() {
                             repo.clearHeatmapCache()
                             repo.clearRecordsCache()
                             CacheEventBus.notifyCleared()
+                            refreshWidget()
                         }
 
                         -201 -> {
@@ -388,12 +395,14 @@ class SignViewModel : ViewModel() {
                             repo.clearHeatmapCache()
                             repo.clearRecordsCache()
                             CacheEventBus.notifyCleared()
+                            refreshWidget()
                         }
 
                         -202 -> {
                             _uiState.update { it.copy(online = false, statusKnown = true) }
                             ToastBus.send("您还没有签到！")
                             stopAutoService()
+                            refreshWidget()
                         }
 
                         else -> ToastBus.send(errorText(res.msg, "签退失败！"))
