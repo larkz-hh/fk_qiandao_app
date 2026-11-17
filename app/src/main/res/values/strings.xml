@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">三院科协签到</string>
+    <string name="sign_widget_description">显示签到状态，一键签到或签退</string>
+    <string name="sign_widget_timer_format">已签到 %s</string>
+    <string name="sign_widget_sign_in">签到</string>
+    <string name="sign_widget_sign_out">签退</string>
+    <string name="sign_widget_not_online">未签到</string>
+    <string name="sign_widget_not_login">未登录，点此打开 App</string>
 </resources>
